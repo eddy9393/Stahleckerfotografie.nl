@@ -145,7 +145,7 @@ export default function StahleckerPage() {
               <div className={styles.accessControls}>
                 <input
                   id="toegangscode"
-                  type="password"
+                  type="text"
                   value={toegangscode}
                   onChange={(e) => {
                     setToegangscode(e.target.value);
@@ -187,6 +187,13 @@ export default function StahleckerPage() {
                     className={styles.placeholderLink}
                   >
                     Facebook
+                  </a>{" "}
+                  of stuur een e-mail naar{" "}
+                  <a
+                    href="mailto:stahlecker.fotografie@outlook.com"
+                    className={styles.placeholderLink}
+                  >
+                    stahlecker.fotografie@outlook.com
                   </a>
                   .
                 </p>
