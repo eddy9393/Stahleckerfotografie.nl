@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, FormEvent } from "react";
+import { useEffect, useState, FormEvent } from "react";
 import Image from "next/image";
 import styles from "./page.module.css";
 import { useScrollReveal } from "@/lib/useScrollReveal";
@@ -50,6 +50,10 @@ type FormStatus = "idle" | "loading" | "success" | "error";
 
 export default function StahleckerPage() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [toegangGecontroleerd, setToegangGecontroleerd] = useState(false);
+  const [volledigeSite, setVolledigeSite] = useState(false);
+  const [toegangscode, setToegangscode] = useState("");
+  const [toegangsfout, setToegangsfout] = useState("");
   const [naam, setNaam] = useState("");
   const [email, setEmail] = useState("");
   const [telefoon, setTelefoon] = useState("");
@@ -57,6 +61,26 @@ export default function StahleckerPage() {
   const [bericht, setBericht] = useState("");
   const [status, setStatus] = useState<FormStatus>("idle");
   const [foutmelding, setFoutmelding] = useState("");
+
+  useEffect(() => {
+    const heeftToegang = window.localStorage.getItem("stahlecker-volledige-site") === "true";
+    setVolledigeSite(heeftToegang);
+    setToegangGecontroleerd(true);
+  }, []);
+
+  function handleToegang(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+
+    if (toegangscode === "Stah2026!") {
+      window.localStorage.setItem("stahlecker-volledige-site", "true");
+      setVolledigeSite(true);
+      setToegangscode("");
+      setToegangsfout("");
+      return;
+    }
+
+    setToegangsfout("Code onjuist");
+  }
 
   // Vier losse refs (niet in een .map — hooks mogen niet in een lus
   // worden aangeroepen) met een licht oplopende vertraging voor een
@@ -96,6 +120,94 @@ export default function StahleckerPage() {
       setFoutmelding("Versturen mislukt. Controleer je internetverbinding en probeer het opnieuw.");
       setStatus("error");
     }
+  }
+
+  if (!toegangGecontroleerd || !volledigeSite) {
+    return (
+      <div className={`${styles.pagina} ${styles.placeholderPagina}`}>
+        <header className={styles.header}>
+          <div className={styles.headerInner}>
+            <a href="#top" className={styles.logoLink} aria-label="Stahlecker Fotografie — home">
+              <Image
+                src="/stahlecker/logo.png"
+                alt="Stahlecker Fotografie"
+                width={841}
+                height={417}
+                className={styles.logoImg}
+                priority
+              />
+            </a>
+
+            <form className={styles.accessForm} onSubmit={handleToegang}>
+              <label htmlFor="toegangscode" className={styles.accessLabel}>
+                Toegang
+              </label>
+              <div className={styles.accessControls}>
+                <input
+                  id="toegangscode"
+                  type="password"
+                  value={toegangscode}
+                  onChange={(e) => {
+                    setToegangscode(e.target.value);
+                    if (toegangsfout) setToegangsfout("");
+                  }}
+                  className={styles.accessInput}
+                  placeholder="Code"
+                  autoComplete="current-password"
+                  aria-invalid={Boolean(toegangsfout)}
+                  aria-describedby={toegangsfout ? "toegangsfout" : undefined}
+                />
+                <button type="submit" className={styles.accessButton}>
+                  Bekijken
+                </button>
+              </div>
+              {toegangsfout && (
+                <span id="toegangsfout" className={styles.accessError}>
+                  {toegangsfout}
+                </span>
+              )}
+            </form>
+          </div>
+        </header>
+
+        <main id="top" className={styles.placeholderMain}>
+          <section className={`${styles.hero} ${styles.placeholderHero}`}>
+            <div className={styles.heroInner}>
+              <div className={`${styles.heroContent} ${styles.placeholderContent}`}>
+                <p className={styles.heroEyebrow}>Stahlecker Fotografie</p>
+                <h1 className={`${styles.heroHeadline} ${styles.placeholderHeadline}`}>
+                  De website is binnenkort helemaal klaar.
+                </h1>
+                <p className={styles.placeholderText}>
+                  Wil je nu al contact opnemen? Neem dan contact op via{" "}
+                  <a
+                    href="https://www.facebook.com/profile.php?id=61590238634912"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={styles.placeholderLink}
+                  >
+                    Facebook
+                  </a>
+                  .
+                </p>
+              </div>
+
+              <div className={styles.heroImageWrap}>
+                <Image
+                  src="/stahlecker/hero-jeroen.jpg"
+                  alt="Portret van fotograaf Jeroen Stahlecker met camera"
+                  fill
+                  sizes="100vw"
+                  className={styles.heroImage}
+                  priority
+                />
+                <div className={styles.heroScrim} aria-hidden="true" />
+              </div>
+            </div>
+          </section>
+        </main>
+      </div>
+    );
   }
 
   return (

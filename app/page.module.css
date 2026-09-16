@@ -771,3 +771,143 @@ a.portfolioFigure:focus-visible .portfolioCaption {
     align-items: flex-end;
   }
 }
+
+/* ── Tijdelijke placeholder / toegang tot volledige site ───────────── */
+.placeholderPagina {
+  height: 100svh;
+  overflow: hidden;
+}
+
+.placeholderMain {
+  height: calc(100svh - var(--slk-header-h));
+  overflow: hidden;
+}
+
+.placeholderHero {
+  min-height: 100%;
+  height: 100%;
+}
+
+.placeholderContent {
+  max-width: 720px;
+}
+
+.placeholderHeadline {
+  max-width: 17ch;
+}
+
+.placeholderText {
+  max-width: 36ch;
+  margin: -0.5rem 0 0;
+  font-size: clamp(0.95rem, 1.5vw, 1.1rem);
+  line-height: 1.65;
+  color: var(--slk-tekst-dim);
+}
+
+.placeholderLink {
+  color: var(--slk-tekst);
+  border-bottom: 1px solid var(--slk-rand-sterk);
+  padding-bottom: 1px;
+}
+
+.placeholderLink:hover,
+.placeholderLink:focus-visible {
+  border-bottom-color: var(--slk-tekst);
+}
+
+.accessForm {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-left: auto;
+}
+
+.accessLabel {
+  display: none;
+  font-size: 0.7rem;
+  font-weight: 300;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--slk-tekst-dim);
+}
+
+.accessControls {
+  display: flex;
+  align-items: stretch;
+}
+
+.accessInput {
+  width: clamp(105px, 23vw, 155px);
+  height: 36px;
+  padding: 0 0.7rem;
+  border: 1px solid var(--slk-rand);
+  border-right: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--slk-tekst);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 300;
+  letter-spacing: 0.04em;
+  outline: none;
+}
+
+.accessInput::placeholder {
+  color: var(--slk-tekst-dim);
+}
+
+.accessButton {
+  height: 36px;
+  padding: 0 0.8rem;
+  border: 1px solid var(--slk-rand-sterk);
+  border-radius: 0;
+  background: transparent;
+  color: var(--slk-tekst);
+  font: inherit;
+  font-size: 0.66rem;
+  font-weight: 300;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.accessButton:hover,
+.accessButton:focus-visible {
+  background: rgba(243, 241, 236, 0.06);
+}
+
+.accessError {
+  position: absolute;
+  top: calc(100% + 3px);
+  right: 0;
+  font-size: 0.68rem;
+  line-height: 1.2;
+  color: #d9b7b7;
+  white-space: nowrap;
+}
+
+@media (min-width: 720px) {
+  .accessLabel {
+    display: block;
+  }
+}
+
+@media (max-width: 479px) {
+  .placeholderPagina {
+    --slk-header-h: 76px;
+  }
+
+  .placeholderPagina .headerInner {
+    gap: 0.75rem;
+  }
+
+  .placeholderPagina .logoImg {
+    height: 31px;
+  }
+
+  .accessButton {
+    padding: 0 0.55rem;
+    font-size: 0.6rem;
+  }
+}
