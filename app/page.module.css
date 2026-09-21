@@ -1363,3 +1363,55 @@
     flex: 1;
   }
 }
+
+/* ── Fotografieworkshop — subtiele fotografie-achtergrond ─────────── */
+.workshopContainer {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding-top: clamp(2.5rem, 5vw, 4rem);
+  padding-bottom: clamp(2.5rem, 5vw, 4rem);
+  border: 1px solid var(--slk-rand);
+}
+
+.workshopContainer::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-image: url("/stahlecker/workshop-background.png");
+  background-size: cover;
+  background-position: center 45%;
+  background-repeat: no-repeat;
+  opacity: 0.2;
+  filter: saturate(0.7) contrast(0.95);
+  transform: scale(1.015);
+  pointer-events: none;
+}
+
+.workshopContainer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background:
+    linear-gradient(90deg, rgba(20, 19, 17, 0.96) 0%, rgba(20, 19, 17, 0.84) 46%, rgba(20, 19, 17, 0.72) 100%),
+    linear-gradient(180deg, rgba(20, 19, 17, 0.12), rgba(20, 19, 17, 0.34));
+  pointer-events: none;
+}
+
+.workshopContainer .workshopGrid {
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-width: 859px) {
+  .workshopContainer::before {
+    background-position: 58% center;
+    opacity: 0.16;
+  }
+
+  .workshopContainer::after {
+    background: rgba(20, 19, 17, 0.82);
+  }
+}

@@ -14,8 +14,7 @@ import {
 } from "@/lib/siteContent";
 
 const NAV_ITEMS = [
-  { label: "Belangrijke momenten", href: "#portretten" },
-  { label: "Portretfotografie", href: "#portretten" },
+  { label: "Portfolio", href: "#portfolio" },
   { label: "Fotografieworkshop", href: "#workshop" },
   { label: "Over mij", href: "#over-mij" },
   { label: "Vraag een offerte aan", href: "#offerte" },
@@ -636,7 +635,7 @@ export default function StahleckerSite({ adminMode = false, onLogout }: Props) {
               )}
               <p className={styles.heroEyebrow}>{content.hero_eyebrow}</p>
               <h1 className={styles.heroHeadline}>{content.hero_headline}</h1>
-              <a href="#portretten" className={styles.scrollCue}>
+              <a href="#portfolio" className={styles.scrollCue}>
                 <span className={styles.scrollCueLabel}>{content.hero_cta}</span>
                 <span className={styles.scrollCueRing}>
                   <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.2">
@@ -660,7 +659,7 @@ export default function StahleckerSite({ adminMode = false, onLogout }: Props) {
           </div>
         </section>
 
-        <section id="portretten" className={styles.section}>
+        <section id="portfolio" className={styles.section}>
           <div className={styles.container}>
             <div className={styles.portfolioHead}>
               {adminMode && (
@@ -710,7 +709,7 @@ export default function StahleckerSite({ adminMode = false, onLogout }: Props) {
         </section>
 
         <section id="workshop" className={styles.section}>
-          <div className={styles.container}>
+          <div className={`${styles.container} ${styles.workshopContainer}`}>
             <div className={styles.workshopGrid}>
               <div className={styles.workshopLead}>
                 {adminMode && (
