@@ -483,6 +483,23 @@
   transition: transform 0.6s cubic-bezier(0.16, 0.8, 0.24, 1);
 }
 
+.portfolioOpenButton {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: zoom-in;
+}
+
+.portfolioOpenButton:focus-visible {
+  outline: 1px solid var(--slk-focus);
+  outline-offset: -4px;
+}
+
 .portfolioHoverInfo {
   position: absolute;
   inset: auto 0 0 0;
@@ -1365,6 +1382,186 @@
 }
 
 
+/* ── Portfolio lightbox ─────────────────────────────────────────── */
+.lightboxBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 250;
+  display: grid;
+  place-items: center;
+  padding: clamp(1rem, 3vw, 2rem);
+  background: rgba(5, 5, 4, 0.90);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+
+.lightboxShell {
+  position: relative;
+  width: min(1180px, 100%);
+  max-height: calc(100svh - 2rem);
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  border: 1px solid rgba(243, 241, 236, 0.18);
+  background: rgba(20, 19, 17, 0.98);
+  overflow: hidden;
+}
+
+.lightboxStage {
+  position: relative;
+  min-height: min(68svh, 760px);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: #0b0b0a;
+}
+
+.lightboxImage {
+  width: 100%;
+  height: 100%;
+  max-height: min(72svh, 780px);
+  object-fit: contain;
+  display: block;
+}
+
+.lightboxClose {
+  position: absolute;
+  top: 0.9rem;
+  right: 0.9rem;
+  z-index: 6;
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(243, 241, 236, 0.28);
+  background: rgba(20, 19, 17, 0.72);
+  color: var(--slk-tekst);
+  font: inherit;
+  font-size: 1.55rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.lightboxArrow {
+  position: absolute;
+  top: 50%;
+  z-index: 5;
+  width: 46px;
+  height: 58px;
+  display: grid;
+  place-items: center;
+  transform: translateY(-50%);
+  border: 1px solid rgba(243, 241, 236, 0.22);
+  background: rgba(20, 19, 17, 0.62);
+  color: var(--slk-tekst);
+  font: inherit;
+  font-size: 2rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease;
+}
+
+.lightboxArrow:hover,
+.lightboxArrow:focus-visible,
+.lightboxClose:hover,
+.lightboxClose:focus-visible {
+  background: rgba(20, 19, 17, 0.9);
+  border-color: rgba(243, 241, 236, 0.55);
+}
+
+.lightboxArrowLeft {
+  left: 0.9rem;
+}
+
+.lightboxArrowRight {
+  right: 0.9rem;
+}
+
+.lightboxMeta {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 2rem;
+  padding: 1.15rem 1.35rem 1.25rem;
+  border-top: 1px solid rgba(243, 241, 236, 0.12);
+}
+
+.lightboxMetaText {
+  min-width: 0;
+}
+
+.lightboxCategory {
+  margin: 0 0 0.35rem;
+  color: var(--slk-tekst-dim);
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.lightboxTitle {
+  margin: 0;
+  color: var(--slk-tekst);
+  font-size: clamp(1.05rem, 2vw, 1.35rem);
+  font-weight: 300;
+  line-height: 1.35;
+}
+
+.lightboxAlt {
+  max-width: 70ch;
+  margin: 0.4rem 0 0;
+  color: rgba(243, 241, 236, 0.72);
+  font-size: 0.86rem;
+  line-height: 1.55;
+}
+
+.lightboxCounter {
+  flex-shrink: 0;
+  color: var(--slk-tekst-dim);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+}
+
+@media (max-width: 640px) {
+  .lightboxBackdrop {
+    padding: 0;
+  }
+
+  .lightboxShell {
+    width: 100%;
+    max-height: 100svh;
+    min-height: 100svh;
+    border: 0;
+  }
+
+  .lightboxStage {
+    min-height: 0;
+  }
+
+  .lightboxImage {
+    max-height: calc(100svh - 150px);
+  }
+
+  .lightboxArrow {
+    width: 40px;
+    height: 52px;
+  }
+
+  .lightboxArrowLeft {
+    left: 0.55rem;
+  }
+
+  .lightboxArrowRight {
+    right: 0.55rem;
+  }
+
+  .lightboxClose {
+    top: 0.65rem;
+    right: 0.65rem;
+  }
+
+  .lightboxMeta {
+    align-items: flex-start;
+    padding: 1rem;
+  }
+}
+
 /* ── Header utilities: taal + beheer ─────────────────────────────── */
 .headerUtilities {
   display: flex;
@@ -1385,36 +1582,36 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid transparent;
   border-radius: 0;
   background: transparent;
   color: var(--slk-tekst-dim);
   cursor: pointer;
-  transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease;
 }
 
 .languageButton {
-  width: 30px;
-  height: 30px;
-  padding: 0;
-  font-size: 1rem;
+  width: auto;
+  height: auto;
+  padding: 0.1rem;
+  border: 0;
+  font-size: 1.12rem;
   line-height: 1;
-  opacity: 0.55;
+  opacity: 0.48;
+  transition: opacity 0.18s ease, transform 0.18s ease;
 }
 
 .languageButton:hover,
 .languageButton:focus-visible,
 .languageButtonActive {
   opacity: 1;
-  border-color: var(--slk-rand-sterk);
-  background: rgba(243, 241, 236, 0.04);
+  transform: translateY(-1px) scale(1.05);
 }
 
 .adminIconButton {
   width: 34px;
   height: 34px;
   padding: 0;
-  border-color: var(--slk-rand);
+  border: 1px solid var(--slk-rand);
+  transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease;
 }
 
 .adminIconButton:hover,
@@ -1515,7 +1712,7 @@
   font-size: 0.82rem;
 }
 
-/* ── Fotografieworkshop: beeld links, geleidelijk donker naar rechts ─ */
+/* ── Fotografieworkshop: foto uitsluitend links, ruime gradient naar rechts ─ */
 .workshopSection {
   position: relative;
   isolation: isolate;
@@ -1523,19 +1720,20 @@
   min-height: 620px;
   display: flex;
   align-items: center;
+  background: var(--slk-bg);
 }
 
 .workshopSection::before {
   content: "";
   position: absolute;
-  inset: 0;
+  inset: 0 auto 0 0;
+  width: 50%;
   z-index: -2;
   background-image: url("/stahlecker/workshop-background.png");
-  background-size: cover;
+  background-size: auto 100%;
   background-position: left center;
   background-repeat: no-repeat;
   filter: saturate(0.78) contrast(0.98);
-  transform: scale(1.01);
 }
 
 .workshopSection::after {
@@ -1545,12 +1743,13 @@
   z-index: -1;
   background: linear-gradient(
     90deg,
-    rgba(20, 19, 17, 0.20) 0%,
-    rgba(20, 19, 17, 0.34) 22%,
-    rgba(20, 19, 17, 0.62) 45%,
-    rgba(20, 19, 17, 0.88) 66%,
-    rgba(20, 19, 17, 0.98) 82%,
-    #141311 100%
+    rgba(20, 19, 17, 0.22) 0%,
+    rgba(20, 19, 17, 0.30) 16%,
+    rgba(20, 19, 17, 0.46) 30%,
+    rgba(20, 19, 17, 0.68) 43%,
+    rgba(20, 19, 17, 0.88) 56%,
+    rgba(20, 19, 17, 0.97) 69%,
+    #141311 82%
   );
   pointer-events: none;
 }
@@ -1579,19 +1778,23 @@
 
 @media (max-width: 859px) {
   .workshopSection {
-    min-height: auto;
+    min-height: 560px;
   }
 
   .workshopSection::before {
-    background-position: 34% center;
+    width: 50%;
+    background-size: auto 100%;
+    background-position: left center;
   }
 
   .workshopSection::after {
     background: linear-gradient(
-      180deg,
-      rgba(20, 19, 17, 0.48) 0%,
-      rgba(20, 19, 17, 0.78) 46%,
-      rgba(20, 19, 17, 0.96) 100%
+      90deg,
+      rgba(20, 19, 17, 0.32) 0%,
+      rgba(20, 19, 17, 0.48) 22%,
+      rgba(20, 19, 17, 0.78) 45%,
+      rgba(20, 19, 17, 0.96) 64%,
+      #141311 78%
     );
   }
 }

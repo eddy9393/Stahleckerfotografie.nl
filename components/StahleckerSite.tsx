@@ -56,6 +56,7 @@ const UI_TEXT = {
     storageDeleteError: "Bestand kon niet worden verwijderd", dbUpdateError: "Database kon niet worden bijgewerkt",
     uploadFailed: "Uploaden mislukt", storeFailed: "Opslaan mislukt", languageNl: "Nederlands", languageEn: "Engels",
     photoAddedOne: "foto toegevoegd.", photoAddedMany: "foto's toegevoegd.", dutch: "Nederlands", english: "Engels",
+    viewPhoto: "Bekijk foto", previousPhoto: "Vorige foto", nextPhoto: "Volgende foto",
   },
   en: {
     access: "Access", code: "Code", view: "View", codeWrong: "Incorrect code",
@@ -82,6 +83,7 @@ const UI_TEXT = {
     storageDeleteError: "File could not be deleted", dbUpdateError: "Database could not be updated",
     uploadFailed: "Upload failed", storeFailed: "Saving failed", languageNl: "Dutch", languageEn: "English",
     photoAddedOne: "photo added.", photoAddedMany: "photos added.", dutch: "Dutch", english: "English",
+    viewPhoto: "View photo", previousPhoto: "Previous photo", nextPhoto: "Next photo",
   },
 } as const;
 
@@ -167,12 +169,14 @@ function PortfolioCard({
   language,
   onEdit,
   onDelete,
+  onOpen,
 }: {
   photo: PortfolioPhoto;
   adminMode: boolean;
   language: Language;
   onEdit: (photo: PortfolioPhoto) => void;
   onDelete: (photo: PortfolioPhoto) => void;
+  onOpen: (photo: PortfolioPhoto) => void;
 }) {
   const revealRef = useScrollReveal<HTMLDivElement>({ delay: 0 });
   const imageUrl = supabase.storage.from("portfolio").getPublicUrl(photo.storage_path).data.publicUrl;
@@ -188,6 +192,13 @@ function PortfolioCard({
           src={imageUrl}
           alt={altText || title || t.portfolioAlt}
           className={styles.portfolioImgDynamic}
+        />
+
+        <button
+          type="button"
+          className={styles.portfolioOpenButton}
+          onClick={() => onOpen(photo)}
+          aria-label={`${t.viewPhoto}: ${title || altText || t.portfolioAlt}`}
         />
 
         {(title || altText) && (
@@ -270,6 +281,8 @@ export default function StahleckerSite() {
   const [photoAltEn, setPhotoAltEn] = useState("");
   const [photoPublished, setPhotoPublished] = useState(true);
   const [savingPhoto, setSavingPhoto] = useState(false);
+
+  const [lightboxPhotoId, setLightboxPhotoId] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -421,6 +434,60 @@ export default function StahleckerSite() {
       })),
     [photos]
   );
+
+  const lightboxPhotos = useMemo(
+    () => groupedPhotos.flatMap((group) => group.photos),
+    [groupedPhotos]
+  );
+
+  const lightboxIndex = lightboxPhotoId
+    ? lightboxPhotos.findIndex((photo) => photo.id === lightboxPhotoId)
+    : -1;
+
+  const lightboxPhoto = lightboxIndex >= 0 ? lightboxPhotos[lightboxIndex] : null;
+
+  function openLightbox(photo: PortfolioPhoto) {
+    setLightboxPhotoId(photo.id);
+  }
+
+  function closeLightbox() {
+    setLightboxPhotoId(null);
+  }
+
+  function showLightboxPhoto(direction: -1 | 1) {
+    if (lightboxPhotos.length < 2 || lightboxIndex < 0) return;
+    const nextIndex = (lightboxIndex + direction + lightboxPhotos.length) % lightboxPhotos.length;
+    setLightboxPhotoId(lightboxPhotos[nextIndex].id);
+  }
+
+  useEffect(() => {
+    if (!lightboxPhotoId) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setLightboxPhotoId(null);
+        return;
+      }
+
+      if (lightboxPhotos.length < 2 || lightboxIndex < 0) return;
+
+      if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+        const direction = event.key === "ArrowLeft" ? -1 : 1;
+        const nextIndex = (lightboxIndex + direction + lightboxPhotos.length) % lightboxPhotos.length;
+        setLightboxPhotoId(lightboxPhotos[nextIndex].id);
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [lightboxPhotoId, lightboxIndex, lightboxPhotos]);
 
   function handleToegang(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -991,6 +1058,7 @@ export default function StahleckerSite() {
                             language={language}
                             onEdit={openPhotoEditor}
                             onDelete={(item) => void deletePhoto(item)}
+                            onOpen={openLightbox}
                           />
                         ))}
                       </div>
@@ -1315,6 +1383,86 @@ export default function StahleckerSite() {
                   {savingPhoto ? t.saving : t.save}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {lightboxPhoto && (
+        <div
+          className={styles.lightboxBackdrop}
+          role="dialog"
+          aria-modal="true"
+          aria-label={t.viewPhoto}
+          onClick={closeLightbox}
+        >
+          <div className={styles.lightboxShell} onClick={(event) => event.stopPropagation()}>
+            <button
+              type="button"
+              className={styles.lightboxClose}
+              onClick={closeLightbox}
+              aria-label={t.close}
+            >
+              ×
+            </button>
+
+            <div className={styles.lightboxStage}>
+              {lightboxPhotos.length > 1 && (
+                <button
+                  type="button"
+                  className={`${styles.lightboxArrow} ${styles.lightboxArrowLeft}`}
+                  onClick={() => showLightboxPhoto(-1)}
+                  aria-label={t.previousPhoto}
+                >
+                  ‹
+                </button>
+              )}
+
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={supabase.storage.from("portfolio").getPublicUrl(lightboxPhoto.storage_path).data.publicUrl}
+                alt={
+                  (language === "en" ? lightboxPhoto.alt_text_en : lightboxPhoto.alt_text) ||
+                  (language === "en" ? lightboxPhoto.title_en : lightboxPhoto.title) ||
+                  t.portfolioAlt
+                }
+                className={styles.lightboxImage}
+              />
+
+              {lightboxPhotos.length > 1 && (
+                <button
+                  type="button"
+                  className={`${styles.lightboxArrow} ${styles.lightboxArrowRight}`}
+                  onClick={() => showLightboxPhoto(1)}
+                  aria-label={t.nextPhoto}
+                >
+                  ›
+                </button>
+              )}
+            </div>
+
+            <div className={styles.lightboxMeta}>
+              <div className={styles.lightboxMetaText}>
+                <p className={styles.lightboxCategory}>
+                  {CATEGORIES.find((category) => category.value === lightboxPhoto.category)?.label[language] ?? lightboxPhoto.category}
+                </p>
+                {(language === "en" ? lightboxPhoto.title_en : lightboxPhoto.title) && (
+                  <h3 className={styles.lightboxTitle}>
+                    {language === "en" ? lightboxPhoto.title_en : lightboxPhoto.title}
+                  </h3>
+                )}
+                {(language === "en" ? lightboxPhoto.alt_text_en : lightboxPhoto.alt_text) && (
+                  <p className={styles.lightboxAlt}>
+                    {language === "en" ? lightboxPhoto.alt_text_en : lightboxPhoto.alt_text}
+                  </p>
+                )}
+              </div>
+
+              {lightboxPhotos.length > 1 && (
+                <span className={styles.lightboxCounter}>
+                  {lightboxIndex + 1} / {lightboxPhotos.length}
+                </span>
+              )}
             </div>
           </div>
         </div>
