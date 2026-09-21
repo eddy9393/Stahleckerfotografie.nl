@@ -1390,115 +1390,143 @@
   display: grid;
   place-items: center;
   padding: clamp(1rem, 3vw, 2rem);
-  background: rgba(5, 5, 4, 0.90);
-  backdrop-filter: blur(5px);
-  -webkit-backdrop-filter: blur(5px);
+  background: rgba(4, 4, 3, 0.94);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 
 .lightboxShell {
   position: relative;
-  width: min(1180px, 100%);
-  max-height: calc(100svh - 2rem);
+  width: 100%;
+  height: 100%;
   display: grid;
-  grid-template-rows: minmax(0, 1fr) auto;
-  border: 1px solid rgba(243, 241, 236, 0.18);
-  background: rgba(20, 19, 17, 0.98);
-  overflow: hidden;
+  place-items: center;
 }
 
 .lightboxStage {
   position: relative;
-  min-height: min(68svh, 760px);
-  display: grid;
+  display: inline-grid;
   place-items: center;
+  max-width: calc(100vw - clamp(2rem, 8vw, 7rem));
+  max-height: calc(100svh - clamp(2rem, 8vw, 5rem));
   overflow: hidden;
-  background: #0b0b0a;
+}
+
+.lightboxStage::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: min(48%, 340px);
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(
+    to top,
+    rgba(7, 7, 6, 0.92) 0%,
+    rgba(7, 7, 6, 0.66) 38%,
+    rgba(7, 7, 6, 0.22) 74%,
+    rgba(7, 7, 6, 0) 100%
+  );
 }
 
 .lightboxImage {
-  width: 100%;
-  height: 100%;
-  max-height: min(72svh, 780px);
-  object-fit: contain;
   display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: calc(100svh - clamp(2rem, 8vw, 5rem));
+  object-fit: contain;
 }
 
 .lightboxClose {
-  position: absolute;
-  top: 0.9rem;
-  right: 0.9rem;
-  z-index: 6;
-  width: 40px;
-  height: 40px;
-  border: 1px solid rgba(243, 241, 236, 0.28);
-  background: rgba(20, 19, 17, 0.72);
-  color: var(--slk-tekst);
-  font: inherit;
-  font-size: 1.55rem;
-  line-height: 1;
-  cursor: pointer;
-}
-
-.lightboxArrow {
-  position: absolute;
-  top: 50%;
-  z-index: 5;
-  width: 46px;
-  height: 58px;
-  display: grid;
-  place-items: center;
-  transform: translateY(-50%);
-  border: 1px solid rgba(243, 241, 236, 0.22);
-  background: rgba(20, 19, 17, 0.62);
-  color: var(--slk-tekst);
+  position: fixed;
+  top: clamp(1rem, 2.2vw, 1.8rem);
+  right: clamp(1rem, 2.2vw, 1.8rem);
+  z-index: 8;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: transparent;
+  color: rgba(243, 241, 236, 0.72);
   font: inherit;
   font-size: 2rem;
   line-height: 1;
   cursor: pointer;
-  transition: background 0.18s ease, border-color 0.18s ease;
+  transition: color 0.18s ease, transform 0.18s ease, text-shadow 0.18s ease;
+}
+
+.lightboxArrow {
+  position: fixed;
+  top: 50%;
+  z-index: 7;
+  width: 58px;
+  height: 74px;
+  display: grid;
+  place-items: center;
+  transform: translateY(-50%);
+  border: 0;
+  background: transparent;
+  color: rgba(243, 241, 236, 0.62);
+  font: inherit;
+  font-size: 3rem;
+  font-weight: 100;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 0.18s ease, transform 0.18s ease, text-shadow 0.18s ease;
 }
 
 .lightboxArrow:hover,
-.lightboxArrow:focus-visible,
+.lightboxArrow:focus-visible {
+  color: #fff;
+  transform: translateY(-50%) scale(1.14);
+  text-shadow: 0 0 18px rgba(255, 255, 255, 0.45);
+}
+
 .lightboxClose:hover,
 .lightboxClose:focus-visible {
-  background: rgba(20, 19, 17, 0.9);
-  border-color: rgba(243, 241, 236, 0.55);
+  color: #fff;
+  transform: scale(1.16) rotate(3deg);
+  text-shadow: 0 0 16px rgba(255, 255, 255, 0.42);
 }
 
 .lightboxArrowLeft {
-  left: 0.9rem;
+  left: clamp(0.55rem, 2vw, 1.5rem);
 }
 
 .lightboxArrowRight {
-  right: 0.9rem;
+  right: clamp(0.55rem, 2vw, 1.5rem);
 }
 
 .lightboxMeta {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
   gap: 2rem;
-  padding: 1.15rem 1.35rem 1.25rem;
-  border-top: 1px solid rgba(243, 241, 236, 0.12);
+  padding: clamp(1.15rem, 3vw, 2rem);
+  pointer-events: none;
 }
 
 .lightboxMetaText {
   min-width: 0;
+  max-width: min(760px, 78%);
 }
 
 .lightboxCategory {
   margin: 0 0 0.35rem;
-  color: var(--slk-tekst-dim);
+  color: rgba(243, 241, 236, 0.72);
   font-size: 0.68rem;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.17em;
   text-transform: uppercase;
 }
 
 .lightboxTitle {
   margin: 0;
-  color: var(--slk-tekst);
-  font-size: clamp(1.05rem, 2vw, 1.35rem);
+  color: #fff;
+  font-size: clamp(1.05rem, 2vw, 1.4rem);
   font-weight: 300;
   line-height: 1.35;
 }
@@ -1506,59 +1534,65 @@
 .lightboxAlt {
   max-width: 70ch;
   margin: 0.4rem 0 0;
-  color: rgba(243, 241, 236, 0.72);
+  color: rgba(243, 241, 236, 0.82);
   font-size: 0.86rem;
   line-height: 1.55;
 }
 
 .lightboxCounter {
   flex-shrink: 0;
-  color: var(--slk-tekst-dim);
+  color: rgba(243, 241, 236, 0.72);
   font-size: 0.72rem;
   letter-spacing: 0.08em;
 }
 
 @media (max-width: 640px) {
   .lightboxBackdrop {
-    padding: 0;
-  }
-
-  .lightboxShell {
-    width: 100%;
-    max-height: 100svh;
-    min-height: 100svh;
-    border: 0;
+    padding: 0.75rem;
   }
 
   .lightboxStage {
-    min-height: 0;
+    max-width: calc(100vw - 1.5rem);
+    max-height: calc(100svh - 1.5rem);
   }
 
   .lightboxImage {
-    max-height: calc(100svh - 150px);
+    max-height: calc(100svh - 1.5rem);
   }
 
   .lightboxArrow {
-    width: 40px;
-    height: 52px;
+    width: 42px;
+    height: 58px;
+    font-size: 2.35rem;
   }
 
   .lightboxArrowLeft {
-    left: 0.55rem;
+    left: 0.1rem;
   }
 
   .lightboxArrowRight {
-    right: 0.55rem;
+    right: 0.1rem;
   }
 
   .lightboxClose {
-    top: 0.65rem;
-    right: 0.65rem;
+    top: 0.4rem;
+    right: 0.4rem;
+    width: 40px;
+    height: 40px;
   }
 
   .lightboxMeta {
-    align-items: flex-start;
+    gap: 0.75rem;
     padding: 1rem;
+  }
+
+  .lightboxMetaText {
+    max-width: 82%;
+  }
+
+  .lightboxAlt {
+    font-size: 0.8rem;
+    line-height: 1.45;
   }
 }
 
@@ -1743,13 +1777,14 @@
   z-index: -1;
   background: linear-gradient(
     90deg,
-    rgba(20, 19, 17, 0.22) 0%,
-    rgba(20, 19, 17, 0.30) 16%,
-    rgba(20, 19, 17, 0.46) 30%,
-    rgba(20, 19, 17, 0.68) 43%,
-    rgba(20, 19, 17, 0.88) 56%,
-    rgba(20, 19, 17, 0.97) 69%,
-    #141311 82%
+    rgba(20, 19, 17, 0.06) 0%,
+    rgba(20, 19, 17, 0.10) 12%,
+    rgba(20, 19, 17, 0.22) 24%,
+    rgba(20, 19, 17, 0.44) 36%,
+    rgba(20, 19, 17, 0.72) 47%,
+    rgba(20, 19, 17, 0.92) 56%,
+    rgba(20, 19, 17, 0.985) 64%,
+    #141311 72%
   );
   pointer-events: none;
 }
@@ -1790,16 +1825,27 @@
   .workshopSection::after {
     background: linear-gradient(
       90deg,
-      rgba(20, 19, 17, 0.32) 0%,
-      rgba(20, 19, 17, 0.48) 22%,
-      rgba(20, 19, 17, 0.78) 45%,
-      rgba(20, 19, 17, 0.96) 64%,
-      #141311 78%
+      rgba(20, 19, 17, 0.12) 0%,
+      rgba(20, 19, 17, 0.24) 18%,
+      rgba(20, 19, 17, 0.52) 34%,
+      rgba(20, 19, 17, 0.82) 48%,
+      rgba(20, 19, 17, 0.97) 60%,
+      #141311 70%
     );
   }
 }
 
 /* Houd het gecentreerde menu vrij van logo, taalkeuze en beheericoon. */
+@media (min-width: 1000px) {
+  .languageButton {
+    font-size: 1.48rem;
+  }
+
+  .languageSwitcher {
+    gap: 0.3rem;
+  }
+}
+
 @media (min-width: 720px) and (max-width: 999px) {
   .nav {
     display: none;

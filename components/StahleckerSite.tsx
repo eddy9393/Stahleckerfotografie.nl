@@ -1429,6 +1429,30 @@ export default function StahleckerSite() {
                 className={styles.lightboxImage}
               />
 
+              <div className={styles.lightboxMeta}>
+                <div className={styles.lightboxMetaText}>
+                  <p className={styles.lightboxCategory}>
+                    {CATEGORIES.find((category) => category.value === lightboxPhoto.category)?.label[language] ?? lightboxPhoto.category}
+                  </p>
+                  {(language === "en" ? lightboxPhoto.title_en : lightboxPhoto.title) && (
+                    <h3 className={styles.lightboxTitle}>
+                      {language === "en" ? lightboxPhoto.title_en : lightboxPhoto.title}
+                    </h3>
+                  )}
+                  {(language === "en" ? lightboxPhoto.alt_text_en : lightboxPhoto.alt_text) && (
+                    <p className={styles.lightboxAlt}>
+                      {language === "en" ? lightboxPhoto.alt_text_en : lightboxPhoto.alt_text}
+                    </p>
+                  )}
+                </div>
+
+                {lightboxPhotos.length > 1 && (
+                  <span className={styles.lightboxCounter}>
+                    {lightboxIndex + 1} / {lightboxPhotos.length}
+                  </span>
+                )}
+              </div>
+
               {lightboxPhotos.length > 1 && (
                 <button
                   type="button"
@@ -1438,30 +1462,6 @@ export default function StahleckerSite() {
                 >
                   ›
                 </button>
-              )}
-            </div>
-
-            <div className={styles.lightboxMeta}>
-              <div className={styles.lightboxMetaText}>
-                <p className={styles.lightboxCategory}>
-                  {CATEGORIES.find((category) => category.value === lightboxPhoto.category)?.label[language] ?? lightboxPhoto.category}
-                </p>
-                {(language === "en" ? lightboxPhoto.title_en : lightboxPhoto.title) && (
-                  <h3 className={styles.lightboxTitle}>
-                    {language === "en" ? lightboxPhoto.title_en : lightboxPhoto.title}
-                  </h3>
-                )}
-                {(language === "en" ? lightboxPhoto.alt_text_en : lightboxPhoto.alt_text) && (
-                  <p className={styles.lightboxAlt}>
-                    {language === "en" ? lightboxPhoto.alt_text_en : lightboxPhoto.alt_text}
-                  </p>
-                )}
-              </div>
-
-              {lightboxPhotos.length > 1 && (
-                <span className={styles.lightboxCounter}>
-                  {lightboxIndex + 1} / {lightboxPhotos.length}
-                </span>
               )}
             </div>
           </div>
