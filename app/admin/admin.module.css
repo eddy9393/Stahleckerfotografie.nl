@@ -1,0 +1,94 @@
+@import url("https://fonts.googleapis.com/css2?family=Jost:wght@100;300;400&display=swap");
+
+.page {
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: #141311;
+  color: #f3f1ec;
+  font-family: "Jost", system-ui, sans-serif;
+}
+
+.panel {
+  width: min(100%, 430px);
+  border: 1px solid rgba(243, 241, 236, 0.16);
+  padding: clamp(28px, 6vw, 48px);
+  background: #1c1b18;
+}
+
+.eyebrow {
+  margin: 0 0 14px;
+  color: #a3a096;
+  font-size: 12px;
+  font-weight: 300;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.title {
+  margin: 0;
+  font-size: clamp(36px, 8vw, 54px);
+  line-height: 1;
+  font-weight: 100;
+}
+
+.text {
+  margin: 18px 0 30px;
+  color: #b8b5ad;
+  font-weight: 300;
+}
+
+.form {
+  display: grid;
+  gap: 20px;
+}
+
+.label {
+  display: grid;
+  gap: 8px;
+  color: #d8d5cd;
+  font-size: 14px;
+  font-weight: 300;
+}
+
+.input {
+  width: 100%;
+  border: 1px solid rgba(243, 241, 236, 0.2);
+  border-radius: 0;
+  padding: 13px 14px;
+  background: #141311;
+  color: #f3f1ec;
+  font: inherit;
+  outline: none;
+}
+
+.input:focus {
+  border-color: rgba(243, 241, 236, 0.65);
+}
+
+.button {
+  border: 1px solid #f3f1ec;
+  border-radius: 0;
+  padding: 13px 18px;
+  background: #f3f1ec;
+  color: #141311;
+  font: inherit;
+  cursor: pointer;
+}
+
+.button:hover {
+  background: transparent;
+  color: #f3f1ec;
+}
+
+.error {
+  margin: 0;
+  color: #ffb4b4;
+  font-size: 14px;
+}
+
+.status {
+  color: #b8b5ad;
+  font-family: "Jost", system-ui, sans-serif;
+}
