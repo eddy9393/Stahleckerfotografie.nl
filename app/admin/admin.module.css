@@ -1,38 +1,24 @@
-@import url("https://fonts.googleapis.com/css2?family=Jost:wght@100;300;400;500&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Jost:wght@100;300;400&display=swap");
 
 .page {
   min-height: 100svh;
-  padding: 32px 20px 64px;
+  display: grid;
+  place-items: center;
+  padding: 24px;
   background: #141311;
   color: #f3f1ec;
   font-family: "Jost", system-ui, sans-serif;
 }
 
-.shell {
-  width: min(1180px, 100%);
-  margin: 0 auto;
-}
-
 .loginPanel {
   width: min(100%, 430px);
-  margin: 10vh auto 0;
-  border: 1px solid rgba(243, 241, 236, 0.18);
+  border: 1px solid rgba(243, 241, 236, 0.16);
   padding: clamp(28px, 6vw, 48px);
   background: #1c1b18;
 }
 
-.header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 24px;
-  margin-bottom: 32px;
-  padding-bottom: 28px;
-  border-bottom: 1px solid rgba(243, 241, 236, 0.14);
-}
-
 .eyebrow {
-  margin: 0 0 12px;
+  margin: 0 0 14px;
   color: #a3a096;
   font-size: 12px;
   font-weight: 300;
@@ -42,32 +28,20 @@
 
 .title {
   margin: 0;
-  font-size: clamp(38px, 7vw, 64px);
-  line-height: 0.95;
+  font-size: clamp(36px, 8vw, 54px);
+  line-height: 1;
   font-weight: 100;
 }
 
 .intro {
-  max-width: 650px;
-  margin: 18px 0 0;
+  margin: 18px 0 30px;
   color: #b8b5ad;
-  font-size: 18px;
   font-weight: 300;
 }
 
-.form,
-.uploadForm {
-  display: grid;
-  gap: 18px;
-}
-
 .form {
-  margin-top: 30px;
-}
-
-.uploadForm {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  align-items: end;
+  display: grid;
+  gap: 20px;
 }
 
 .label {
@@ -78,287 +52,42 @@
   font-weight: 300;
 }
 
-.optional {
-  color: #8f8c84;
-}
-
-.input,
-.fileInput {
+.input {
   width: 100%;
-  min-height: 48px;
   border: 1px solid rgba(243, 241, 236, 0.2);
   border-radius: 0;
-  padding: 12px 14px;
+  padding: 13px 14px;
   background: #141311;
   color: #f3f1ec;
   font: inherit;
   outline: none;
 }
 
-.input:focus,
-.fileInput:focus {
+.input:focus {
   border-color: rgba(243, 241, 236, 0.65);
 }
 
-.fileInput {
-  padding: 9px 10px;
-}
-
-.fileInput::file-selector-button {
-  margin-right: 12px;
-  border: 0;
-  padding: 7px 10px;
-  background: #f3f1ec;
-  color: #141311;
-  font: inherit;
-  cursor: pointer;
-}
-
-.checkboxLabel {
-  display: flex;
-  min-height: 48px;
-  align-items: center;
-  gap: 10px;
-  color: #d8d5cd;
-  font-size: 14px;
-  font-weight: 300;
-}
-
-.checkboxLabel input {
-  width: 17px;
-  height: 17px;
-}
-
-.primaryButton,
-.secondaryButton,
-.smallButton,
-.dangerButton {
-  border-radius: 0;
-  font: inherit;
-  cursor: pointer;
-  transition: 160ms ease;
-}
-
 .primaryButton {
-  min-height: 48px;
   border: 1px solid #f3f1ec;
-  padding: 12px 18px;
+  border-radius: 0;
+  padding: 13px 18px;
   background: #f3f1ec;
   color: #141311;
+  font: inherit;
+  cursor: pointer;
 }
 
-.primaryButton:hover:not(:disabled) {
+.primaryButton:hover {
   background: transparent;
   color: #f3f1ec;
-}
-
-.primaryButton:disabled {
-  cursor: wait;
-  opacity: 0.65;
-}
-
-.secondaryButton {
-  border: 1px solid rgba(243, 241, 236, 0.35);
-  padding: 10px 16px;
-  background: transparent;
-  color: #f3f1ec;
-}
-
-.secondaryButton:hover {
-  border-color: #f3f1ec;
-}
-
-.uploadPanel,
-.portfolioSection {
-  border: 1px solid rgba(243, 241, 236, 0.15);
-  background: #1c1b18;
-}
-
-.uploadPanel {
-  margin-bottom: 28px;
-  padding: clamp(22px, 4vw, 34px);
-}
-
-.portfolioSection {
-  padding: clamp(22px, 4vw, 34px);
-}
-
-.sectionHeading,
-.categoryHeader,
-.cardBody {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.sectionHeading,
-.categoryHeader {
-  align-items: baseline;
-}
-
-.sectionTitle {
-  margin: 0 0 22px;
-  font-size: 26px;
-  font-weight: 300;
-}
-
-.counter,
-.categoryHeader span {
-  color: #8f8c84;
-  font-size: 13px;
-}
-
-.categoryBlock + .categoryBlock {
-  margin-top: 40px;
-  padding-top: 32px;
-  border-top: 1px solid rgba(243, 241, 236, 0.1);
-}
-
-.categoryHeader {
-  margin-bottom: 16px;
-}
-
-.categoryHeader h3 {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 300;
-}
-
-.grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 18px;
-}
-
-.card {
-  overflow: hidden;
-  border: 1px solid rgba(243, 241, 236, 0.12);
-  background: #141311;
-}
-
-.imageWrap {
-  aspect-ratio: 4 / 3;
-  overflow: hidden;
-  background: #0f0f0d;
-}
-
-.image {
-  width: 100%;
-  height: 100%;
-  display: block;
-  object-fit: cover;
-}
-
-.cardBody {
-  align-items: flex-end;
-  padding: 14px;
-}
-
-.cardTitle {
-  display: block;
-  font-size: 15px;
-  font-weight: 400;
-}
-
-.cardMeta {
-  margin: 4px 0 0;
-  color: #8f8c84;
-  font-size: 12px;
-}
-
-.cardActions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-.smallButton,
-.dangerButton {
-  border: 1px solid rgba(243, 241, 236, 0.22);
-  padding: 7px 10px;
-  background: transparent;
-  color: #d8d5cd;
-  font-size: 12px;
-}
-
-.smallButton:hover {
-  border-color: #f3f1ec;
-}
-
-.dangerButton {
-  border-color: rgba(255, 160, 160, 0.35);
-  color: #ffb4b4;
-}
-
-.dangerButton:hover {
-  border-color: #ffb4b4;
-}
-
-.error,
-.errorBanner {
-  color: #ffb4b4;
 }
 
 .error {
   margin: 0;
+  color: #ffb4b4;
   font-size: 14px;
 }
 
-.errorBanner,
-.successBanner {
-  margin: 0 0 20px;
-  padding: 12px 14px;
-  border: 1px solid currentColor;
-  background: #1c1b18;
-  font-size: 14px;
-}
-
-.successBanner {
-  color: #b9ddb9;
-}
-
-.status,
-.muted,
-.empty {
-  color: #98958d;
-  font-weight: 300;
-}
-
-.empty {
-  margin: 0;
-  padding: 18px 0 4px;
-}
-
-@media (max-width: 820px) {
-  .uploadForm {
-    grid-template-columns: 1fr;
-  }
-
-  .grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 560px) {
-  .page {
-    padding: 22px 14px 48px;
-  }
-
-  .header {
-    flex-direction: column;
-  }
-
-  .grid {
-    grid-template-columns: 1fr;
-  }
-
-  .cardBody {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .cardActions {
-    justify-content: flex-start;
-  }
+.status {
+  color: #b8b5ad;
 }

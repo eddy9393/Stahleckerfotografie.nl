@@ -421,10 +421,38 @@
   margin-bottom: clamp(2.5rem, 5vw, 4rem);
 }
 
+.portfolioGroups {
+  display: grid;
+  gap: clamp(3rem, 7vw, 5.5rem);
+}
+
+.portfolioGroup {
+  min-width: 0;
+}
+
+.portfolioGroupHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--slk-rand);
+}
+
+.portfolioGroupTitle {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 300;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--slk-tekst-dim);
+}
+
 .portfolioGrid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: clamp(2rem, 5vw, 3.5rem);
+  gap: clamp(1.25rem, 3vw, 2rem);
 }
 
 @media (min-width: 720px) {
@@ -433,57 +461,108 @@
   }
 }
 
+.portfolioFigure {
+  display: block;
+  min-width: 0;
+}
+
 .portfolioItem {
   position: relative;
   width: 100%;
+  aspect-ratio: 4 / 3;
   overflow: hidden;
   border: 1px solid var(--slk-rand);
+  background: var(--slk-bg-raised);
 }
 
-.portfolioImg {
+.portfolioImgDynamic {
+  width: 100%;
+  height: 100%;
+  display: block;
   object-fit: cover;
   transition: transform 0.6s cubic-bezier(0.16, 0.8, 0.24, 1);
 }
 
-/* Alleen op apparaten met een echte muis/hover — voorkomt een
-   "vastgeplakte" hover-status na een tik op mobiel/tablet. */
-@media (hover: hover) and (pointer: fine) {
-  .portfolioFigure:hover .portfolioImg {
-    transform: scale(1.045);
-  }
+.portfolioHoverInfo {
+  position: absolute;
+  inset: auto 0 0 0;
+  z-index: 2;
+  display: grid;
+  gap: 0.3rem;
+  padding: 3.5rem 1.1rem 1rem;
+  background: linear-gradient(to top, rgba(10, 10, 9, 0.9), rgba(10, 10, 9, 0));
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  pointer-events: none;
 }
 
-.portfolioFigure {
-  display: block;
-}
-
-.portfolioCaption {
-  margin-top: 0.75rem;
-  font-size: 0.8rem;
-  font-weight: 300;
-  color: var(--slk-tekst-dim);
-  transition: color 0.2s ease;
-}
-
-a.portfolioFigure:hover .portfolioCaption,
-a.portfolioFigure:focus-visible .portfolioCaption {
+.portfolioHoverTitle {
+  font-size: 0.95rem;
+  font-weight: 400;
+  line-height: 1.35;
   color: var(--slk-tekst);
 }
 
-.portfolioCaptionArrow {
-  display: inline-block;
-  margin-left: 0.4em;
+.portfolioHoverAlt {
+  font-size: 0.78rem;
+  font-weight: 300;
+  line-height: 1.45;
+  color: rgba(243, 241, 236, 0.78);
 }
 
-/* De maan-foto krijgt op desktop dezelfde tegelverhouding als de
-   zwaan-foto ernaast, zodat beide precies even breed en hoog worden.
-   !important is hier nodig omdat de "eigen" verhouding via een
-   inline style wordt gezet (hogere specificiteit dan een gewone
-   klasse), en die willen we op dit ene breekpunt bewust overschrijven. */
-@media (min-width: 720px) {
-  .portfolioItemMatch {
-    aspect-ratio: 2048 / 1974 !important;
+@media (hover: hover) and (pointer: fine) {
+  .portfolioItem:hover .portfolioImgDynamic {
+    transform: scale(1.045);
   }
+
+  .portfolioItem:hover .portfolioHoverInfo,
+  .portfolioItem:focus-within .portfolioHoverInfo {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (hover: none) {
+  .portfolioHoverInfo {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.portfolioHidden {
+  opacity: 0.58;
+}
+
+.hiddenBadge {
+  position: absolute;
+  left: 0.75rem;
+  top: 0.75rem;
+  z-index: 5;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid rgba(243, 241, 236, 0.45);
+  background: rgba(20, 19, 17, 0.9);
+  color: var(--slk-tekst);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.photoAdminActions {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: 6;
+  display: flex;
+  gap: 0.45rem;
+}
+
+.adminEmptyPortfolio {
+  margin: 0;
+  padding: 1.5rem;
+  border: 1px dashed var(--slk-rand-sterk);
+  color: var(--slk-tekst-dim);
+  font-size: 0.9rem;
 }
 
 /* ── Fotografieworkshop ──────────────────────────────────────────── */
@@ -909,5 +988,378 @@ a.portfolioFigure:focus-visible .portfolioCaption {
   .accessButton {
     padding: 0 0.55rem;
     font-size: 0.6rem;
+  }
+}
+
+
+/* ── Visuele adminmodus ───────────────────────────────────────────── */
+
+.adminToolbar {
+  position: relative;
+  z-index: 80;
+  border-bottom: 1px solid rgba(243, 241, 236, 0.2);
+  background: #0d0d0c;
+}
+
+.adminToolbarInner {
+  width: 100%;
+  max-width: var(--slk-max);
+  margin: 0 auto;
+  padding: 0.8rem clamp(1.25rem, 4vw, 3rem);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.adminToolbarTitle {
+  font-size: 0.78rem;
+  font-weight: 300;
+  color: var(--slk-tekst-dim);
+}
+
+.adminToolbarActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.adminToolbarButton,
+.sectionEditButton,
+.addPhotoButton,
+.inlineAdminButton,
+.adminPrimaryButton,
+.adminSecondaryButton,
+.adminDangerButton,
+.removeDraftButton,
+.adminModalClose {
+  font: inherit;
+  border-radius: 0;
+  cursor: pointer;
+}
+
+.adminToolbarButton,
+.sectionEditButton,
+.addPhotoButton,
+.inlineAdminButton {
+  border: 1px solid rgba(243, 241, 236, 0.35);
+  background: rgba(20, 19, 17, 0.92);
+  color: var(--slk-tekst);
+  padding: 0.45rem 0.7rem;
+  font-size: 0.7rem;
+  font-weight: 300;
+  letter-spacing: 0.04em;
+}
+
+.adminToolbarButton:hover,
+.sectionEditButton:hover,
+.addPhotoButton:hover,
+.inlineAdminButton:hover {
+  border-color: var(--slk-tekst);
+}
+
+.sectionEditButton {
+  margin-bottom: 1rem;
+}
+
+.addPhotoButton {
+  white-space: nowrap;
+}
+
+.inlineAdminDanger,
+.adminDangerButton,
+.removeDraftButton {
+  border-color: rgba(255, 165, 165, 0.55);
+  color: #ffc1c1;
+}
+
+.adminNotice {
+  position: sticky;
+  top: 0;
+  z-index: 90;
+  padding: 0.7rem 1rem;
+  text-align: center;
+  font-size: 0.8rem;
+  border-bottom: 1px solid currentColor;
+  background: #141311;
+}
+
+.adminNoticeError {
+  color: #ffc1c1;
+}
+
+.adminNoticeSuccess {
+  color: #b9ddb9;
+}
+
+.contactHeadingWrap {
+  position: relative;
+}
+
+.adminModalBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(6, 6, 5, 0.86);
+  overflow: auto;
+}
+
+.adminModal {
+  width: min(680px, 100%);
+  max-height: calc(100svh - 2rem);
+  overflow: auto;
+  border: 1px solid rgba(243, 241, 236, 0.26);
+  background: #1c1b18;
+  color: var(--slk-tekst);
+  padding: clamp(1.2rem, 4vw, 2rem);
+}
+
+.adminModalWide {
+  width: min(940px, 100%);
+}
+
+.adminModalHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 1rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid var(--slk-rand);
+}
+
+.adminModalHead h2 {
+  margin: 0;
+  font-size: 1.8rem;
+  font-weight: 100;
+}
+
+.adminModalEyebrow {
+  margin: 0 0 0.25rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--slk-tekst-dim);
+}
+
+.adminModalSubtext {
+  margin: 0.3rem 0 0;
+  color: var(--slk-tekst-dim);
+  font-size: 0.85rem;
+}
+
+.adminModalClose {
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--slk-rand-sterk);
+  background: transparent;
+  color: var(--slk-tekst);
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.adminModalFields {
+  display: grid;
+  gap: 1rem;
+}
+
+.adminField {
+  display: grid;
+  gap: 0.45rem;
+  font-size: 0.78rem;
+  color: var(--slk-tekst-dim);
+}
+
+.adminField input,
+.adminField textarea,
+.uploadDraftFields input,
+.uploadDraftFields textarea {
+  width: 100%;
+  border: 1px solid var(--slk-rand-sterk);
+  border-radius: 0;
+  padding: 0.75rem 0.85rem;
+  background: #141311;
+  color: var(--slk-tekst);
+  font: inherit;
+  resize: vertical;
+}
+
+.adminField input:focus,
+.adminField textarea:focus,
+.uploadDraftFields input:focus,
+.uploadDraftFields textarea:focus {
+  outline: 1px solid var(--slk-focus);
+  outline-offset: 2px;
+}
+
+.adminModalFooter,
+.adminModalFooterBetween,
+.adminModalFooterActions {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.adminModalFooter {
+  justify-content: flex-end;
+  margin-top: 1.5rem;
+}
+
+.adminModalFooterBetween {
+  justify-content: space-between;
+  margin-top: 1.5rem;
+}
+
+.adminModalFooterActions {
+  justify-content: flex-end;
+}
+
+.adminPrimaryButton,
+.adminSecondaryButton,
+.adminDangerButton {
+  min-height: 42px;
+  padding: 0.65rem 0.95rem;
+}
+
+.adminPrimaryButton {
+  border: 1px solid var(--slk-tekst);
+  background: var(--slk-tekst);
+  color: var(--slk-bg);
+}
+
+.adminSecondaryButton,
+.adminDangerButton {
+  border: 1px solid var(--slk-rand-sterk);
+  background: transparent;
+  color: var(--slk-tekst);
+}
+
+.adminDangerButton {
+  border-color: rgba(255, 165, 165, 0.55);
+  color: #ffc1c1;
+}
+
+.adminPrimaryButton:disabled,
+.adminSecondaryButton:disabled,
+.adminDangerButton:disabled,
+.removeDraftButton:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.adminFilePicker {
+  display: grid;
+  gap: 0.6rem;
+  margin-bottom: 1.2rem;
+  padding: 1rem;
+  border: 1px dashed var(--slk-rand-sterk);
+  color: var(--slk-tekst-dim);
+  font-size: 0.85rem;
+}
+
+.adminFilePicker input {
+  color: var(--slk-tekst);
+}
+
+.uploadDraftList {
+  display: grid;
+  gap: 0.8rem;
+  margin: 1.2rem 0;
+}
+
+.uploadDraftRow {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr) auto;
+  gap: 0.9rem;
+  align-items: start;
+  padding: 0.8rem;
+  border: 1px solid var(--slk-rand);
+  background: #141311;
+}
+
+.uploadDraftPreview {
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: #0d0d0c;
+}
+
+.uploadDraftPreview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.uploadDraftFields {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.uploadDraftFields strong {
+  font-size: 0.78rem;
+  font-weight: 400;
+  overflow-wrap: anywhere;
+}
+
+.removeDraftButton {
+  border: 1px solid rgba(255, 165, 165, 0.45);
+  background: transparent;
+  padding: 0.5rem 0.65rem;
+  font-size: 0.72rem;
+}
+
+.adminCheckbox {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-top: 1rem;
+  color: var(--slk-tekst-dim);
+  font-size: 0.82rem;
+}
+
+.adminCheckbox input {
+  width: 17px;
+  height: 17px;
+}
+
+.uploadProgress {
+  margin: 0.8rem 0 0;
+  color: var(--slk-tekst-dim);
+  font-size: 0.8rem;
+}
+
+@media (max-width: 720px) {
+  .adminToolbarInner {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .adminToolbarActions {
+    width: 100%;
+  }
+
+  .uploadDraftRow {
+    grid-template-columns: 80px minmax(0, 1fr);
+  }
+
+  .removeDraftButton {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+
+  .adminModalFooterBetween {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .adminModalFooterActions {
+    justify-content: stretch;
+  }
+
+  .adminModalFooterActions > *,
+  .adminDangerButton {
+    flex: 1;
   }
 }
