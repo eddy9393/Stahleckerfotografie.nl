@@ -24,10 +24,10 @@ const NAV_ITEMS = [
 ] as const;
 
 const CATEGORIES = [
-  { value: "belangrijke-momenten", label: { nl: "Belangrijke momenten", en: "Important moments" } },
   { value: "portretfotografie", label: { nl: "Portretfotografie", en: "Portrait photography" } },
-  { value: "workshops", label: { nl: "Workshops en fotografielessen", en: "Workshops and photography lessons" } },
   { value: "mijn-werk", label: { nl: "Mijn werk", en: "Personal work" } },
+  { value: "belangrijke-momenten", label: { nl: "Belangrijke momenten", en: "Important moments" } },
+  { value: "workshops", label: { nl: "Workshops en fotografielessen", en: "Workshops and photography lessons" } },
 ] as const;
 
 const UI_TEXT = {
