@@ -1,4 +1,6 @@
-export const DEFAULT_SITE_CONTENT = {
+export type Language = "nl" | "en";
+
+export const DEFAULT_SITE_CONTENT_NL = {
   hero_eyebrow: "Stahlecker Fotografie",
   hero_headline: "Oprechte fotografie met aandacht voor mens en moment.",
   hero_cta: "Ontdek mijn werk",
@@ -41,7 +43,52 @@ export const DEFAULT_SITE_CONTENT = {
   footer_brand: "Stahlecker Fotografie",
 } as const;
 
-export type SiteContentKey = keyof typeof DEFAULT_SITE_CONTENT;
+export const DEFAULT_SITE_CONTENT_EN = {
+  hero_eyebrow: "Stahlecker Photography",
+  hero_headline: "Authentic photography with attention to people and meaningful moments.",
+  hero_cta: "Discover my work",
+
+  portfolio_eyebrow: "Portfolio",
+  portfolio_heading: "Portraits",
+
+  workshop_eyebrow: "Learn to see",
+  workshop_heading: "Photography workshop",
+  workshop_lead:
+    "For beginning photographers and anyone who wants to understand their camera better. The workshop can be given individually or in a small group.",
+  workshop_body_1:
+    "During the workshop you will learn to understand and use the most important camera settings, including shutter speed, aperture and ISO. We also focus on composition, light and learning to observe consciously. There is plenty of room for hands-on practice and questions.",
+  workshop_body_2:
+    "The workshop lasts 1 to 2 hours and takes place in Zoetermeer and the surrounding area. The exact location can depend on the subject and the participant's wishes. Bring your own camera, preferably one that allows you to set shutter speed, aperture and ISO manually. You are of course welcome to bring your own lenses and other photography accessories as well.",
+  workshop_body_3:
+    "The workshop is built up calmly and step by step. The emphasis is on taking photographs yourself and understanding why certain settings or choices work. The content can be adapted to your level and learning goals. Price on request.",
+
+  about_eyebrow: "About me",
+  about_heading: "Jeroen Stahlecker",
+  about_p1:
+    "My name is Jeroen Stahlecker and photography is my way of capturing people, moments and stories in a personal way.",
+  about_p2:
+    "What appeals to me most are genuine moments: a look, an encounter, a special occasion or something small that could easily pass unnoticed. I try not only to photograph what is happening, but also to show something of the atmosphere and the person behind the image.",
+  about_p3:
+    "My style is calm, authentic and personal. When I photograph people, I find it important that they feel at ease. I take my time, give clear guidance when needed and try not to force a situation. The most beautiful images often emerge when someone can simply be themselves.",
+  about_p4:
+    "Within Stahlecker Photography I mainly focus on important moments, portrait photography, and photography workshops and lessons. Besides taking photographs myself, I also enjoy sharing my knowledge of photography. I like to explain things calmly and step by step, and I enjoy seeing someone learn not only how a camera works, but also how to look at the world differently.",
+  about_p5:
+    "With Stahlecker Photography I am continuing to develop my work step by step. Above all, I want to create photographs that feel personal and meaningful to the people I photograph.",
+
+  contact_eyebrow: "Contact",
+  contact_heading: "Request a quote",
+  contact_intro:
+    "Would you like an important moment captured, a portrait made or to take a photography workshop? Fill in your preferences below and I will get in touch with you.",
+
+  placeholder_headline: "The website will be fully ready soon.",
+  placeholder_intro: "Would you like to get in touch already? Contact me via",
+
+  footer_brand: "Stahlecker Photography",
+} as const;
+
+export const DEFAULT_SITE_CONTENT = DEFAULT_SITE_CONTENT_NL;
+
+export type SiteContentKey = keyof typeof DEFAULT_SITE_CONTENT_NL;
 export type SiteContent = Record<SiteContentKey, string>;
 
 export type TextSectionId =
@@ -55,71 +102,75 @@ export type TextSectionId =
 
 export type TextFieldConfig = {
   key: SiteContentKey;
-  label: string;
+  label: Record<Language, string>;
   rows?: number;
 };
 
 export type TextSectionConfig = {
-  title: string;
+  title: Record<Language, string>;
   fields: TextFieldConfig[];
 };
 
+export function getDbContentKey(key: SiteContentKey, language: Language) {
+  return language === "nl" ? key : `${key}_en`;
+}
+
 export const TEXT_SECTIONS: Record<TextSectionId, TextSectionConfig> = {
   hero: {
-    title: "Hero",
+    title: { nl: "Hero", en: "Hero" },
     fields: [
-      { key: "hero_eyebrow", label: "Bovenregel" },
-      { key: "hero_headline", label: "Hoofdtitel", rows: 3 },
-      { key: "hero_cta", label: "Knoptekst" },
+      { key: "hero_eyebrow", label: { nl: "Bovenregel", en: "Eyebrow" } },
+      { key: "hero_headline", label: { nl: "Hoofdtitel", en: "Main title" }, rows: 3 },
+      { key: "hero_cta", label: { nl: "Knoptekst", en: "Button text" } },
     ],
   },
   portfolio: {
-    title: "Portfolio",
+    title: { nl: "Portfolio", en: "Portfolio" },
     fields: [
-      { key: "portfolio_eyebrow", label: "Bovenregel" },
-      { key: "portfolio_heading", label: "Titel" },
+      { key: "portfolio_eyebrow", label: { nl: "Bovenregel", en: "Eyebrow" } },
+      { key: "portfolio_heading", label: { nl: "Titel", en: "Title" } },
     ],
   },
   workshop: {
-    title: "Workshops en fotografielessen",
+    title: { nl: "Workshops en fotografielessen", en: "Photography workshops and lessons" },
     fields: [
-      { key: "workshop_eyebrow", label: "Bovenregel" },
-      { key: "workshop_heading", label: "Titel" },
-      { key: "workshop_lead", label: "Introductie", rows: 4 },
-      { key: "workshop_body_1", label: "Tekst 1", rows: 5 },
-      { key: "workshop_body_2", label: "Tekst 2", rows: 5 },
-      { key: "workshop_body_3", label: "Tekst 3", rows: 5 },
+      { key: "workshop_eyebrow", label: { nl: "Bovenregel", en: "Eyebrow" } },
+      { key: "workshop_heading", label: { nl: "Titel", en: "Title" } },
+      { key: "workshop_lead", label: { nl: "Introductie", en: "Introduction" }, rows: 4 },
+      { key: "workshop_body_1", label: { nl: "Tekst 1", en: "Text 1" }, rows: 5 },
+      { key: "workshop_body_2", label: { nl: "Tekst 2", en: "Text 2" }, rows: 5 },
+      { key: "workshop_body_3", label: { nl: "Tekst 3", en: "Text 3" }, rows: 5 },
     ],
   },
   about: {
-    title: "Over mij",
+    title: { nl: "Over mij", en: "About me" },
     fields: [
-      { key: "about_eyebrow", label: "Bovenregel" },
-      { key: "about_heading", label: "Naam / titel" },
-      { key: "about_p1", label: "Alinea 1", rows: 4 },
-      { key: "about_p2", label: "Alinea 2", rows: 5 },
-      { key: "about_p3", label: "Alinea 3", rows: 5 },
-      { key: "about_p4", label: "Alinea 4", rows: 6 },
-      { key: "about_p5", label: "Alinea 5", rows: 4 },
+      { key: "about_eyebrow", label: { nl: "Bovenregel", en: "Eyebrow" } },
+      { key: "about_heading", label: { nl: "Naam / titel", en: "Name / title" } },
+      { key: "about_p1", label: { nl: "Alinea 1", en: "Paragraph 1" }, rows: 4 },
+      { key: "about_p2", label: { nl: "Alinea 2", en: "Paragraph 2" }, rows: 5 },
+      { key: "about_p3", label: { nl: "Alinea 3", en: "Paragraph 3" }, rows: 5 },
+      { key: "about_p4", label: { nl: "Alinea 4", en: "Paragraph 4" }, rows: 6 },
+      { key: "about_p5", label: { nl: "Alinea 5", en: "Paragraph 5" }, rows: 4 },
     ],
   },
   contact: {
-    title: "Contact",
+    title: { nl: "Contact", en: "Contact" },
     fields: [
-      { key: "contact_eyebrow", label: "Bovenregel" },
-      { key: "contact_heading", label: "Titel" },
-      { key: "contact_intro", label: "Introductie", rows: 4 },
+      { key: "contact_eyebrow", label: { nl: "Bovenregel", en: "Eyebrow" } },
+      { key: "contact_heading", label: { nl: "Titel", en: "Title" } },
+      { key: "contact_intro", label: { nl: "Introductie", en: "Introduction" }, rows: 4 },
     ],
   },
   placeholder: {
-    title: "Placeholder",
+    title: { nl: "Placeholder", en: "Placeholder" },
     fields: [
-      { key: "placeholder_headline", label: "Titel", rows: 2 },
-      { key: "placeholder_intro", label: "Introductie", rows: 3 },
+      { key: "placeholder_headline", label: { nl: "Titel", en: "Title" }, rows: 2 },
+      { key: "placeholder_intro", label: { nl: "Introductie", en: "Introduction" }, rows: 3 },
     ],
   },
   footer: {
-    title: "Footer",
-    fields: [{ key: "footer_brand", label: "Naam" }],
+    title: { nl: "Footer", en: "Footer" },
+    fields: [{ key: "footer_brand", label: { nl: "Naam", en: "Name" } }],
   },
 };

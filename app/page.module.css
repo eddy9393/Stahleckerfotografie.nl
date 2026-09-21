@@ -1364,54 +1364,263 @@
   }
 }
 
-/* ── Fotografieworkshop — subtiele fotografie-achtergrond ─────────── */
-.workshopContainer {
+
+/* ── Header utilities: taal + beheer ─────────────────────────────── */
+.headerUtilities {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.languageSwitcher {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.languageButton,
+.adminIconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--slk-tekst-dim);
+  cursor: pointer;
+  transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+}
+
+.languageButton {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  font-size: 1rem;
+  line-height: 1;
+  opacity: 0.55;
+}
+
+.languageButton:hover,
+.languageButton:focus-visible,
+.languageButtonActive {
+  opacity: 1;
+  border-color: var(--slk-rand-sterk);
+  background: rgba(243, 241, 236, 0.04);
+}
+
+.adminIconButton {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-color: var(--slk-rand);
+}
+
+.adminIconButton:hover,
+.adminIconButton:focus-visible,
+.adminIconButtonActive {
+  color: var(--slk-tekst);
+  border-color: var(--slk-rand-sterk);
+  background: rgba(243, 241, 236, 0.05);
+}
+
+.adminIconSvg {
+  width: 17px;
+  height: 17px;
+  display: block;
+}
+
+/* ── Placeholder header: toegang + taal + beheer ────────────────── */
+.placeholderHeaderActions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.placeholderHeaderActions .accessForm {
+  margin-left: 0;
+}
+
+@media (max-width: 719px) {
+  .placeholderPagina {
+    --slk-header-h: 124px;
+  }
+
+  .placeholderHeaderInner {
+    flex-wrap: wrap;
+    align-content: center;
+    row-gap: 0.55rem;
+  }
+
+  .placeholderHeaderActions {
+    display: contents;
+  }
+
+  .placeholderHeaderInner .headerUtilities {
+    margin-left: auto;
+  }
+
+  .placeholderHeaderInner .accessForm {
+    order: 3;
+    flex: 0 0 100%;
+    width: 100%;
+    margin-left: 0;
+    justify-content: flex-end;
+  }
+
+  .placeholderHeaderInner .accessControls {
+    flex: 1;
+    max-width: 330px;
+  }
+
+  .placeholderHeaderInner .accessInput {
+    width: auto;
+    min-width: 0;
+    flex: 1;
+  }
+}
+
+/* ── Admin login als modal in plaats van losse pagina ───────────── */
+.adminLoginBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(8, 8, 7, 0.78);
+  backdrop-filter: blur(7px);
+}
+
+.adminLoginModal {
+  width: min(100%, 430px);
+  max-height: calc(100svh - 2rem);
+  overflow: auto;
+  padding: clamp(1.5rem, 4vw, 2.25rem);
+  border: 1px solid var(--slk-rand-sterk);
+  background: var(--slk-bg-raised);
+}
+
+.adminLoginForm {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.adminLoginError {
+  margin: 0;
+  color: #ffc1c1;
+  font-size: 0.82rem;
+}
+
+/* ── Fotografieworkshop: beeld links, geleidelijk donker naar rechts ─ */
+.workshopSection {
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  padding-top: clamp(2.5rem, 5vw, 4rem);
-  padding-bottom: clamp(2.5rem, 5vw, 4rem);
-  border: 1px solid var(--slk-rand);
+  min-height: 620px;
+  display: flex;
+  align-items: center;
 }
 
-.workshopContainer::before {
+.workshopSection::before {
   content: "";
   position: absolute;
   inset: 0;
-  z-index: 0;
+  z-index: -2;
   background-image: url("/stahlecker/workshop-background.png");
   background-size: cover;
-  background-position: center 45%;
+  background-position: left center;
   background-repeat: no-repeat;
-  opacity: 0.2;
-  filter: saturate(0.7) contrast(0.95);
-  transform: scale(1.015);
-  pointer-events: none;
+  filter: saturate(0.78) contrast(0.98);
+  transform: scale(1.01);
 }
 
-.workshopContainer::after {
+.workshopSection::after {
   content: "";
   position: absolute;
   inset: 0;
-  z-index: 0;
-  background:
-    linear-gradient(90deg, rgba(20, 19, 17, 0.96) 0%, rgba(20, 19, 17, 0.84) 46%, rgba(20, 19, 17, 0.72) 100%),
-    linear-gradient(180deg, rgba(20, 19, 17, 0.12), rgba(20, 19, 17, 0.34));
+  z-index: -1;
+  background: linear-gradient(
+    90deg,
+    rgba(20, 19, 17, 0.20) 0%,
+    rgba(20, 19, 17, 0.34) 22%,
+    rgba(20, 19, 17, 0.62) 45%,
+    rgba(20, 19, 17, 0.88) 66%,
+    rgba(20, 19, 17, 0.98) 82%,
+    #141311 100%
+  );
   pointer-events: none;
 }
 
-.workshopContainer .workshopGrid {
+.workshopInner {
+  width: 100%;
+  max-width: var(--slk-max);
+  margin: 0 auto;
+  padding: 0 clamp(1.25rem, 4vw, 3rem);
+}
+
+.workshopSection .workshopGrid {
   position: relative;
   z-index: 1;
 }
 
-@media (max-width: 859px) {
-  .workshopContainer::before {
-    background-position: 58% center;
-    opacity: 0.16;
+@media (min-width: 860px) {
+  .workshopSection .workshopGrid {
+    grid-template-columns: minmax(260px, 390px) minmax(360px, 1fr);
   }
 
-  .workshopContainer::after {
-    background: rgba(20, 19, 17, 0.82);
+  .workshopSection .workshopBody {
+    padding-left: clamp(1rem, 4vw, 3rem);
+  }
+}
+
+@media (max-width: 859px) {
+  .workshopSection {
+    min-height: auto;
+  }
+
+  .workshopSection::before {
+    background-position: 34% center;
+  }
+
+  .workshopSection::after {
+    background: linear-gradient(
+      180deg,
+      rgba(20, 19, 17, 0.48) 0%,
+      rgba(20, 19, 17, 0.78) 46%,
+      rgba(20, 19, 17, 0.96) 100%
+    );
+  }
+}
+
+/* Houd het gecentreerde menu vrij van logo, taalkeuze en beheericoon. */
+@media (min-width: 720px) and (max-width: 999px) {
+  .nav {
+    display: none;
+  }
+
+  .menuToggle {
+    display: flex;
+  }
+
+  .mobileNav {
+    display: flex;
+  }
+}
+
+@media (min-width: 1000px) {
+  .nav {
+    display: block;
+  }
+
+  .menuToggle {
+    display: none;
+  }
+
+  .mobileNav {
+    display: none;
   }
 }
