@@ -89,6 +89,7 @@ const UI_TEXT = {
     requestLabel: "Vertel iets over je aanvraag", requestPlaceholder: "Bijvoorbeeld: waar vindt de opdracht plaats en welke datum of periode heb je in gedachten?",
     sending: "Versturen…", sendRequest: "Aanvraag versturen", success: "Bedankt! Je aanvraag is verstuurd — je krijgt zo snel mogelijk bericht.",
     sendFailed: "Versturen mislukt. Probeer het opnieuw.", connectionFailed: "Versturen mislukt. Controleer je internetverbinding en probeer het opnieuw.",
+    privacyNote: "Je gegevens worden alleen gebruikt om je aanvraag te behandelen.", privacyLink: "Privacyverklaring",
     socialMedia: "Social media", portfolioAlt: "Portfoliofoto Stahlecker Fotografie", photoTitle: "Titel", altText: "Alt-tekst",
     confirmDelete: "Weet je zeker dat je deze foto definitief wilt verwijderen?", photosLoadError: "Foto's konden niet worden geladen",
     textLoadError: "Teksten konden niet worden geladen", textSaveError: "Tekst kon niet worden opgeslagen", photoSaveError: "Foto kon niet worden aangepast",
@@ -125,6 +126,7 @@ const UI_TEXT = {
     requestLabel: "Tell me about your request", requestPlaceholder: "For example: where will the assignment take place and what date or period do you have in mind?",
     sending: "Sending…", sendRequest: "Send request", success: "Thank you! Your request has been sent — I will get back to you as soon as possible.",
     sendFailed: "Sending failed. Please try again.", connectionFailed: "Sending failed. Check your internet connection and try again.",
+    privacyNote: "Your details are only used to handle your request.", privacyLink: "Privacy policy",
     socialMedia: "Social media", portfolioAlt: "Stahlecker Photography portfolio photo", photoTitle: "Title", altText: "Alt text",
     confirmDelete: "Are you sure you want to permanently delete this photo?", photosLoadError: "Photos could not be loaded",
     textLoadError: "Text could not be loaded", textSaveError: "Text could not be saved", photoSaveError: "Photo could not be updated",
@@ -411,6 +413,8 @@ export default function StahleckerSite() {
   const [telefoon, setTelefoon] = useState("");
   const [dienst, setDienst] = useState("");
   const [bericht, setBericht] = useState("");
+  const [website, setWebsite] = useState("");
+  const [formStartedAt] = useState(() => Date.now());
   const [status, setStatus] = useState<FormStatus>("idle");
   const [foutmelding, setFoutmelding] = useState("");
 
@@ -736,7 +740,7 @@ export default function StahleckerSite() {
       const res = await fetch("/api/stahlecker-offerte", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ naam, email, telefoon, dienst, bericht }),
+        body: JSON.stringify({ naam, email, telefoon, dienst, bericht, website, startedAt: formStartedAt }),
       });
       const data = await res.json();
 
@@ -752,6 +756,7 @@ export default function StahleckerSite() {
       setTelefoon("");
       setDienst("");
       setBericht("");
+      setWebsite("");
     } catch {
       setFoutmelding(t.connectionFailed);
       setStatus("error");
@@ -1364,8 +1369,8 @@ export default function StahleckerSite() {
                     Facebook
                   </a>{" "}
                   {t.contactVia}{" "}
-                  <a href="mailto:stahlecker.fotografie@outlook.com" className={styles.placeholderLink}>
-                    stahlecker.fotografie@outlook.com
+                  <a href="mailto:info@stahleckerfotografie.nl" className={styles.placeholderLink}>
+                    info@stahleckerfotografie.nl
                   </a>
                   .
                 </p>
@@ -1753,6 +1758,19 @@ export default function StahleckerSite() {
             </div>
 
             <form className={styles.form} onSubmit={handleSubmit}>
+              <div className={styles.honeypot} aria-hidden="true">
+                <label htmlFor="website">Website</label>
+                <input
+                  id="website"
+                  name="website"
+                  type="text"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  value={website}
+                  onChange={(e) => setWebsite(e.target.value)}
+                />
+              </div>
+
               <div className={styles.field}>
                 <label className={styles.label} htmlFor="naam">{t.name}</label>
                 <input id="naam" name="naam" type="text" required autoComplete="name" className={styles.input} value={naam} onChange={(e) => setNaam(e.target.value)} />
@@ -1792,6 +1810,10 @@ export default function StahleckerSite() {
                 <span className={styles.charCount}>{bericht.length}/400</span>
               </div>
 
+              <p className={styles.formPrivacy}>
+                {t.privacyNote} <a href="/privacyverklaring">{t.privacyLink}</a>.
+              </p>
+
               <div className={styles.formFooter}>
                 <button type="submit" className={styles.submitBtn} disabled={status === "loading"}>
                   {status === "loading" ? t.sending : t.sendRequest}
@@ -1813,8 +1835,11 @@ export default function StahleckerSite() {
         <div className={`${styles.container} ${styles.footerInner}`}>
           <p className={styles.footerBrand}>{content.footer_brand}</p>
           <div className={styles.footerLinks}>
-            <a href="mailto:stahlecker.fotografie@outlook.com" className={styles.footerEmail}>
-              stahlecker.fotografie@outlook.com
+            <a href="mailto:info@stahleckerfotografie.nl" className={styles.footerEmail}>
+              info@stahleckerfotografie.nl
+            </a>
+            <a href="/privacyverklaring" className={styles.footerEmail}>
+              {t.privacyLink}
             </a>
             <div className={styles.footerSocials} aria-label={t.socialMedia}>
               <a href="https://www.facebook.com/profile.php?id=61590238634912" target="_blank" rel="noopener noreferrer" aria-label="Facebook" className={styles.socialIconLink}>

@@ -1,0 +1,102 @@
+@import url('https://fonts.googleapis.com/css2?family=Jost:wght@100;300;400&display=swap');
+
+.page {
+  min-height: 100vh;
+  background: #141311;
+  color: #f3f1ec;
+  font-family: 'Jost', system-ui, sans-serif;
+  font-weight: 300;
+}
+
+.shell {
+  width: min(860px, calc(100% - 3rem));
+  margin: 0 auto;
+  padding: clamp(2.5rem, 7vw, 5.5rem) 0 clamp(4rem, 8vw, 7rem);
+}
+
+.back {
+  display: inline-block;
+  margin-bottom: clamp(3rem, 7vw, 5.5rem);
+  color: rgba(243, 241, 236, 0.64);
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(243, 241, 236, 0.18);
+  padding-bottom: 0.22rem;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.back:hover,
+.back:focus-visible {
+  color: #f3f1ec;
+  border-color: rgba(243, 241, 236, 0.6);
+}
+
+.header {
+  padding-bottom: clamp(2.8rem, 6vw, 4.5rem);
+  border-bottom: 1px solid rgba(243, 241, 236, 0.14);
+}
+
+.eyebrow {
+  margin: 0 0 0.9rem;
+  color: rgba(243, 241, 236, 0.55);
+  font-size: 0.72rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: clamp(2.35rem, 7vw, 5rem);
+  line-height: 0.98;
+  font-weight: 200;
+  letter-spacing: -0.035em;
+}
+
+.updated {
+  margin: 1.4rem 0 0;
+  color: rgba(243, 241, 236, 0.48);
+  font-size: 0.76rem;
+}
+
+.shell section {
+  padding: clamp(2.1rem, 4vw, 3rem) 0;
+  border-bottom: 1px solid rgba(243, 241, 236, 0.1);
+}
+
+.shell h2 {
+  margin: 0 0 1rem;
+  font-size: clamp(1.15rem, 2.5vw, 1.45rem);
+  line-height: 1.3;
+  font-weight: 400;
+}
+
+.shell p {
+  max-width: 72ch;
+  margin: 0;
+  color: rgba(243, 241, 236, 0.72);
+  font-size: 0.98rem;
+  line-height: 1.75;
+}
+
+.shell p + p {
+  margin-top: 0.9rem;
+}
+
+.shell a {
+  color: #f3f1ec;
+  text-underline-offset: 0.2em;
+  text-decoration-thickness: 1px;
+  text-decoration-color: rgba(243, 241, 236, 0.34);
+}
+
+.shell a:hover,
+.shell a:focus-visible {
+  text-decoration-color: #f3f1ec;
+}
+
+@media (max-width: 560px) {
+  .shell {
+    width: min(100% - 2rem, 860px);
+  }
+}

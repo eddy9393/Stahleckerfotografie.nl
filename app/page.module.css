@@ -1113,6 +1113,38 @@
   color: #e8b4a0;
 }
 
+
+.honeypot {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  overflow: hidden !important;
+  clip: rect(0 0 0 0) !important;
+  clip-path: inset(50%) !important;
+  white-space: nowrap !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+.formPrivacy {
+  max-width: 520px;
+  margin: -0.1rem 0 1.2rem;
+  color: var(--slk-tekst-dim);
+  font-size: 0.76rem;
+  line-height: 1.6;
+}
+
+.formPrivacy a {
+  color: var(--slk-tekst);
+  border-bottom: 1px solid var(--slk-rand-sterk);
+  transition: opacity 0.2s ease;
+}
+
+.formPrivacy a:hover,
+.formPrivacy a:focus-visible {
+  opacity: 0.72;
+}
+
 /* ── Footer ──────────────────────────────────────────────────────── */
 
 .footer {

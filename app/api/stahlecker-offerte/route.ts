@@ -1,104 +1,227 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Redis } from "@upstash/redis";
 
-const redis = new Redis({
-  url: process.env.KV_REST_API_URL!,
-  token: process.env.KV_REST_API_TOKEN!,
-});
+export const runtime = "nodejs";
 
-// Max 3 aanvragen per IP per 10 minuten
-async function isRateLimited(ip: string): Promise<boolean> {
-  const key = `ratelimit:stahlecker-offerte:${ip}`;
-  const count = await redis.incr(key);
-  if (count === 1) await redis.expire(key, 10 * 60);
-  return count > 3;
+const RATE_LIMIT_MAX = 3;
+const RATE_LIMIT_WINDOW_SECONDS = 10 * 60;
+const FORM_MINIMUM_MS = 2200;
+const TO_EMAIL = process.env.CONTACT_TO_EMAIL || "info@stahleckerfotografie.nl";
+
+const allowedServices = new Set([
+  "Belangrijke momenten",
+  "Portretfotografie",
+  "Fotografieworkshops en lessen",
+]);
+
+type MemoryRate = {
+  count: number;
+  resetAt: number;
+};
+
+const memoryRateLimit = new Map<string, MemoryRate>();
+
+function getRedis() {
+  const url = process.env.KV_REST_API_URL;
+  const token = process.env.KV_REST_API_TOKEN;
+
+  if (!url || !token) return null;
+
+  return new Redis({ url, token });
 }
 
-async function verstuurEmail(
-  naam: string,
-  email: string,
-  telefoon: string,
-  dienst: string,
-  bericht: string
-) {
+async function isRateLimited(ip: string): Promise<boolean> {
+  const redis = getRedis();
+
+  if (redis) {
+    const key = `ratelimit:stahlecker-offerte:${ip}`;
+    const count = await redis.incr(key);
+    if (count === 1) await redis.expire(key, RATE_LIMIT_WINDOW_SECONDS);
+    return count > RATE_LIMIT_MAX;
+  }
+
+  const now = Date.now();
+  const current = memoryRateLimit.get(ip);
+
+  if (!current || current.resetAt <= now) {
+    memoryRateLimit.set(ip, {
+      count: 1,
+      resetAt: now + RATE_LIMIT_WINDOW_SECONDS * 1000,
+    });
+    return false;
+  }
+
+  current.count += 1;
+  memoryRateLimit.set(ip, current);
+  return current.count > RATE_LIMIT_MAX;
+}
+
+function clean(value: unknown, maxLength: number) {
+  if (typeof value !== "string") return "";
+  return value.trim().slice(0, maxLength);
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function countLinks(value: string) {
+  return (value.match(/(?:https?:\/\/|www\.)/gi) || []).length;
+}
+
+async function sendEmail({
+  naam,
+  email,
+  telefoon,
+  dienst,
+  bericht,
+}: {
+  naam: string;
+  email: string;
+  telefoon: string;
+  dienst: string;
+  bericht: string;
+}) {
   const nodemailer = await import("nodemailer");
 
+  const host = process.env.SMTP_HOST || "mail.stahleckerfotografie.nl";
+  const port = Number(process.env.SMTP_PORT || "465");
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
+
+  if (!user || !pass) {
+    throw new Error("SMTP credentials ontbreken.");
+  }
+
   const transporter = nodemailer.createTransport({
-    service: "gmail",
+    host,
+    port,
+    secure: port === 465,
     auth: {
-      user: process.env.MAIL_USER,
-      pass: process.env.MAIL_PASS,
+      user,
+      pass,
     },
   });
 
-  // Ontvangstadres staat vast op het mailadres van de fotograaf.
-  const ontvanger = "stahlecker.fotografie@outlook.com";
+  const safeNaam = escapeHtml(naam);
+  const safeEmail = escapeHtml(email);
+  const safeTelefoon = escapeHtml(telefoon);
+  const safeDienst = escapeHtml(dienst);
+  const safeBericht = escapeHtml(bericht).replace(/\n/g, "<br>");
 
   await transporter.sendMail({
-    from: `"Stahlecker Fotografie — website" <${process.env.MAIL_USER}>`,
-    to: ontvanger,
+    from: `"Stahlecker Fotografie — website" <${user}>`,
+    to: TO_EMAIL,
     replyTo: email,
-    subject: `Nieuwe offerteaanvraag van ${naam}`,
+    subject: `Nieuwe fotografieaanvraag — ${dienst}`,
+    text: [
+      "Nieuwe fotografieaanvraag via stahleckerfotografie.nl",
+      "",
+      `Naam: ${naam}`,
+      `E-mail: ${email}`,
+      telefoon ? `Telefoon: ${telefoon}` : null,
+      `Gewenste dienst: ${dienst}`,
+      bericht ? `Aanvraag: ${bericht}` : null,
+    ]
+      .filter(Boolean)
+      .join("\n"),
     html: `
-      <div style="font-family:sans-serif;max-width:560px;margin:0 auto">
-        <h2 style="color:#1a1a1a">Nieuwe offerteaanvraag</h2>
+      <div style="font-family:Arial,sans-serif;max-width:620px;margin:0 auto;color:#1c1c1c">
+        <h2 style="margin:0 0 20px">Nieuwe fotografieaanvraag</h2>
         <table style="width:100%;border-collapse:collapse">
-          <tr><td style="padding:8px 0;font-weight:600;width:140px">Naam</td><td>${naam}</td></tr>
-          <tr><td style="padding:8px 0;font-weight:600">E-mail</td><td><a href="mailto:${email}">${email}</a></td></tr>
-          ${telefoon ? `<tr><td style="padding:8px 0;font-weight:600">Telefoon</td><td>${telefoon}</td></tr>` : ""}
-          <tr><td style="padding:8px 0;font-weight:600">Gewenste dienst</td><td>${dienst}</td></tr>
-          ${bericht ? `<tr><td style="padding:8px 0;font-weight:600;vertical-align:top">Aanvraag</td><td style="white-space:pre-wrap">${bericht}</td></tr>` : ""}
+          <tr><td style="padding:8px 0;font-weight:700;width:155px">Naam</td><td>${safeNaam}</td></tr>
+          <tr><td style="padding:8px 0;font-weight:700">E-mail</td><td><a href="mailto:${safeEmail}">${safeEmail}</a></td></tr>
+          ${safeTelefoon ? `<tr><td style="padding:8px 0;font-weight:700">Telefoon</td><td>${safeTelefoon}</td></tr>` : ""}
+          <tr><td style="padding:8px 0;font-weight:700">Gewenste dienst</td><td>${safeDienst}</td></tr>
+          ${safeBericht ? `<tr><td style="padding:8px 0;font-weight:700;vertical-align:top">Aanvraag</td><td style="line-height:1.6">${safeBericht}</td></tr>` : ""}
         </table>
-        <hr style="margin:24px 0;border:none;border-top:1px solid #eee"/>
-        <p style="color:#999;font-size:12px">Verzonden via het offerteformulier op stahleckerfotografie.nl</p>
+        <hr style="margin:24px 0;border:0;border-top:1px solid #ddd">
+        <p style="margin:0;color:#777;font-size:12px">Verzonden via het contactformulier op stahleckerfotografie.nl</p>
       </div>
     `,
   });
 }
 
 export async function POST(req: NextRequest) {
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0] ?? "unknown";
-
-  if (await isRateLimited(ip)) {
-    return NextResponse.json(
-      { error: "Te veel aanvragen. Probeer het over 10 minuten opnieuw." },
-      { status: 429 }
-    );
-  }
-
-  const { naam, email, telefoon, dienst, bericht } = await req.json();
-
-  if (!naam?.trim() || !email?.trim() || !dienst?.trim()) {
-    return NextResponse.json(
-      { error: "Naam, e-mailadres en gewenste dienst zijn verplicht." },
-      { status: 400 }
-    );
-  }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return NextResponse.json({ error: "Ongeldig e-mailadres." }, { status: 400 });
-  }
-  if (bericht && bericht.length > 400) {
-    return NextResponse.json({ error: "Bericht is te lang (max 400 tekens)." }, { status: 400 });
-  }
-  if (!process.env.MAIL_USER || !process.env.MAIL_PASS) {
-    return NextResponse.json(
-      { error: "Mailconfiguratie ontbreekt. Neem direct contact op via stahlecker.fotografie@outlook.com." },
-      { status: 500 }
-    );
-  }
+  const ip =
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    req.headers.get("x-real-ip") ||
+    "unknown";
 
   try {
-    await verstuurEmail(
-      naam.trim(),
-      email.trim(),
-      telefoon?.trim() ?? "",
-      dienst.trim(),
-      bericht?.trim() ?? ""
+    const body = await req.json();
+
+    // Honeypot: bots vullen verborgen velden vaak automatisch in.
+    if (typeof body.website === "string" && body.website.trim()) {
+      return NextResponse.json({ ok: true });
+    }
+
+    const startedAt = Number(body.startedAt);
+    if (!Number.isFinite(startedAt) || Date.now() - startedAt < FORM_MINIMUM_MS) {
+      return NextResponse.json(
+        { error: "Formulier kon niet worden verzonden. Probeer het opnieuw." },
+        { status: 400 }
+      );
+    }
+
+    if (await isRateLimited(ip)) {
+      return NextResponse.json(
+        { error: "Te veel aanvragen. Probeer het over 10 minuten opnieuw." },
+        { status: 429 }
+      );
+    }
+
+    const naam = clean(body.naam, 100);
+    const email = clean(body.email, 254).toLowerCase();
+    const telefoon = clean(body.telefoon, 50);
+    const dienst = clean(body.dienst, 80);
+    const bericht = clean(body.bericht, 400);
+
+    if (!naam || !email || !dienst) {
+      return NextResponse.json(
+        { error: "Naam, e-mailadres en gewenste dienst zijn verplicht." },
+        { status: 400 }
+      );
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return NextResponse.json({ error: "Ongeldig e-mailadres." }, { status: 400 });
+    }
+
+    if (!allowedServices.has(dienst)) {
+      return NextResponse.json({ error: "Kies een geldige dienst." }, { status: 400 });
+    }
+
+    if (countLinks(bericht) > 2) {
+      return NextResponse.json(
+        { error: "Je bericht bevat te veel links." },
+        { status: 400 }
+      );
+    }
+
+    await sendEmail({ naam, email, telefoon, dienst, bericht });
+
+    return NextResponse.json(
+      { ok: true },
+      { headers: { "Cache-Control": "no-store" } }
     );
-    return NextResponse.json({ ok: true });
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error("E-mail versturen mislukt (stahlecker-offerte):", msg);
-    return NextResponse.json({ error: "Versturen mislukt. Probeer het opnieuw." }, { status: 500 });
+  } catch (error) {
+    console.error(
+      "Contactformulier Stahlecker Fotografie:",
+      error instanceof Error ? error.message : error
+    );
+
+    return NextResponse.json(
+      {
+        error:
+          "Versturen mislukt. Mail eventueel rechtstreeks naar info@stahleckerfotografie.nl.",
+      },
+      { status: 500 }
+    );
   }
 }

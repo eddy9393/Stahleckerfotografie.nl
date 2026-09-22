@@ -21,7 +21,7 @@ const structuredData = {
       logo: `${siteUrl}/stahlecker/logo.png`,
       description:
         "Persoonlijke portretfotografie, belangrijke momenten en fotografieworkshops in Zoetermeer en omgeving.",
-      email: "stahlecker.fotografie@outlook.com",
+      email: "info@stahleckerfotografie.nl",
       founder: {
         "@type": "Person",
         name: "Jeroen Stahlecker",
