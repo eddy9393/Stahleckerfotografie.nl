@@ -704,6 +704,199 @@
   margin-top: 1.1rem;
 }
 
+/* ── Reviews ─────────────────────────────────────────────────────── */
+
+.reviewsSection {
+  overflow: hidden;
+  padding-top: clamp(4rem, 7vw, 6.5rem);
+  padding-bottom: clamp(4rem, 7vw, 6.5rem);
+  border-top: 1px solid var(--slk-rand);
+}
+
+.reviewsSectionDisabled {
+  opacity: 0.72;
+}
+
+.reviewsHeader {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.5rem;
+  margin-bottom: clamp(2.2rem, 4vw, 3.5rem);
+}
+
+.reviewsHeader .sectionHeading {
+  margin-bottom: 0;
+}
+
+.reviewsAdminActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.55rem;
+}
+
+.reviewsAdminStatus {
+  margin: -2.25rem 0 2.2rem;
+  color: var(--slk-tekst-dim);
+  font-size: 0.74rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.reviewsViewport {
+  width: 100%;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 4.5%, #000 95.5%, transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0, #000 4.5%, #000 95.5%, transparent 100%);
+}
+
+.reviewsTrack {
+  display: flex;
+  width: max-content;
+  will-change: transform;
+}
+
+.reviewsTrackAnimated {
+  animation: reviewsMarquee 52s linear infinite;
+}
+
+.reviewsTrackAnimated:hover {
+  animation-play-state: paused;
+}
+
+.reviewsSet {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: stretch;
+  gap: clamp(2.5rem, 5vw, 5.5rem);
+  padding-right: clamp(2.5rem, 5vw, 5.5rem);
+}
+
+.reviewItem {
+  position: relative;
+  width: clamp(300px, 33vw, 470px);
+  flex: 0 0 auto;
+  padding: 0 0 0 clamp(1.15rem, 2vw, 1.8rem);
+  border-left: 1px solid rgba(243, 241, 236, 0.18);
+}
+
+.reviewQuote {
+  margin: 0;
+  color: var(--slk-tekst);
+  font-size: clamp(1.15rem, 1.7vw, 1.55rem);
+  line-height: 1.55;
+  font-weight: 200;
+}
+
+.reviewPerson {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-top: 1.5rem;
+}
+
+.reviewAvatar {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  filter: saturate(0.88) contrast(0.98);
+}
+
+.reviewPersonText {
+  display: grid;
+  gap: 0.12rem;
+}
+
+.reviewPersonText strong {
+  color: var(--slk-tekst);
+  font-size: 0.9rem;
+  font-weight: 400;
+}
+
+.reviewPersonText span {
+  color: var(--slk-tekst-dim);
+  font-size: 0.77rem;
+  font-weight: 300;
+}
+
+.reviewEditButton {
+  margin-top: 1rem;
+  border: 0;
+  border-bottom: 1px solid rgba(243, 241, 236, 0.35);
+  background: transparent;
+  color: var(--slk-tekst-dim);
+  padding: 0 0 0.16rem;
+  font: inherit;
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+
+.reviewEditButton:hover,
+.reviewEditButton:focus-visible {
+  color: var(--slk-tekst);
+  border-bottom-color: var(--slk-tekst);
+}
+
+.reviewCharCount {
+  justify-self: end;
+  color: var(--slk-tekst-dim);
+  font-size: 0.7rem;
+}
+
+.reviewAdminPreview {
+  width: 96px;
+  height: 96px;
+  overflow: hidden;
+  border-radius: 50%;
+  border: 1px solid var(--slk-rand);
+  background: #0d0d0c;
+}
+
+.reviewAdminPreview img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+@keyframes reviewsMarquee {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-50%, 0, 0); }
+}
+
+@media (max-width: 700px) {
+  .reviewsHeader {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .reviewsAdminActions {
+    justify-content: flex-start;
+  }
+
+  .reviewsAdminStatus {
+    margin-top: -1.25rem;
+  }
+
+  .reviewsViewport {
+    -webkit-mask-image: linear-gradient(to right, transparent 0, #000 7%, #000 93%, transparent 100%);
+    mask-image: linear-gradient(to right, transparent 0, #000 7%, #000 93%, transparent 100%);
+  }
+
+  .reviewItem {
+    width: min(82vw, 360px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reviewsTrackAnimated {
+    animation: none;
+  }
+}
+
 /* ── Offerte ─────────────────────────────────────────────────────── */
 
 .offerteIntro {

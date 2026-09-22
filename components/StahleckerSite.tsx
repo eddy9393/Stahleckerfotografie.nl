@@ -58,6 +58,13 @@ const UI_TEXT = {
     photoAddedOne: "foto toegevoegd.", photoAddedMany: "foto's toegevoegd.", dutch: "Nederlands", english: "Engels",
     viewPhoto: "Bekijk foto", previousPhoto: "Vorige foto", nextPhoto: "Volgende foto",
     aboutPhoto: "Foto bij Over mij", chooseReplacement: "Kies een nieuwe foto", replacePhoto: "Foto vervangen", aboutPhotoSaved: "Foto bij Over mij is aangepast.",
+    reviewsEyebrow: "Ervaringen", reviewsHeading: "Wat anderen zeggen", addReview: "+ Review toevoegen", editReview: "Review wijzigen",
+    reviewsOn: "Reviews zichtbaar", reviewsOff: "Reviews verborgen", enableReviews: "Reviews aanzetten", disableReviews: "Reviews uitzetten",
+    noReviews: "Nog geen reviews toegevoegd.", reviewQuote: "Reviewquote", reviewRole: "Functie / omschrijving", reviewPhoto: "Kleine foto (optioneel)",
+    reviewNameRequired: "Vul een naam in.", reviewQuoteRequired: "Vul een review in.", reviewTooLong: "De review mag maximaal 250 tekens bevatten.",
+    reviewSaved: "Review is opgeslagen.", reviewDeleted: "Review is verwijderd.", reviewDelete: "Review verwijderen",
+    confirmReviewDelete: "Weet je zeker dat je deze review definitief wilt verwijderen?", reviewTranslationFailed: "Automatische vertaling is mislukt",
+    removeCurrentPhoto: "Huidige foto verwijderen", reviewSectionUpdated: "Reviewsectie is aangepast.",
   },
   en: {
     access: "Access", code: "Code", view: "View", codeWrong: "Incorrect code",
@@ -86,6 +93,13 @@ const UI_TEXT = {
     photoAddedOne: "photo added.", photoAddedMany: "photos added.", dutch: "Dutch", english: "English",
     viewPhoto: "View photo", previousPhoto: "Previous photo", nextPhoto: "Next photo",
     aboutPhoto: "About me photo", chooseReplacement: "Choose a new photo", replacePhoto: "Replace photo", aboutPhotoSaved: "About me photo has been updated.",
+    reviewsEyebrow: "Reviews", reviewsHeading: "What others say", addReview: "+ Add review", editReview: "Edit review",
+    reviewsOn: "Reviews visible", reviewsOff: "Reviews hidden", enableReviews: "Enable reviews", disableReviews: "Disable reviews",
+    noReviews: "No reviews have been added yet.", reviewQuote: "Review quote", reviewRole: "Role / description", reviewPhoto: "Small photo (optional)",
+    reviewNameRequired: "Enter a name.", reviewQuoteRequired: "Enter a review.", reviewTooLong: "The review may contain up to 250 characters.",
+    reviewSaved: "Review has been saved.", reviewDeleted: "Review has been deleted.", reviewDelete: "Delete review",
+    confirmReviewDelete: "Are you sure you want to permanently delete this review?", reviewTranslationFailed: "Automatic translation failed",
+    removeCurrentPhoto: "Remove current photo", reviewSectionUpdated: "Review section has been updated.",
   },
 } as const;
 
@@ -100,6 +114,21 @@ type PortfolioPhoto = {
   storage_path: string;
   sort_order: number;
   is_published: boolean;
+};
+
+type Review = {
+  id: string;
+  created_at: string;
+  quote_original: string;
+  name: string;
+  role_original: string | null;
+  source_language: string | null;
+  quote_nl: string;
+  role_nl: string | null;
+  quote_en: string;
+  role_en: string | null;
+  photo_path: string | null;
+  sort_order: number;
 };
 
 type FormStatus = "idle" | "loading" | "success" | "error";
@@ -144,12 +173,12 @@ function loadImage(file: File) {
   });
 }
 
-async function optimizeImageForWeb(file: File) {
+async function optimizeImageForWeb(file: File, maxDimension = MAX_IMAGE_DIMENSION, quality = WEBP_QUALITY) {
   const image = await loadImage(file);
   const originalWidth = image.naturalWidth;
   const originalHeight = image.naturalHeight;
   const longestSide = Math.max(originalWidth, originalHeight);
-  const scale = longestSide > MAX_IMAGE_DIMENSION ? MAX_IMAGE_DIMENSION / longestSide : 1;
+  const scale = longestSide > maxDimension ? maxDimension / longestSide : 1;
   const width = Math.max(1, Math.round(originalWidth * scale));
   const height = Math.max(1, Math.round(originalHeight * scale));
 
@@ -171,7 +200,7 @@ async function optimizeImageForWeb(file: File) {
         else reject(new Error("Afbeelding kon niet naar WebP worden omgezet."));
       },
       "image/webp",
-      WEBP_QUALITY
+      quality
     );
   });
 
@@ -321,6 +350,17 @@ export default function StahleckerSite() {
   const [savingAboutImage, setSavingAboutImage] = useState(false);
 
   const [photos, setPhotos] = useState<PortfolioPhoto[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [reviewsEnabled, setReviewsEnabled] = useState(true);
+  const [reviewEditorOpen, setReviewEditorOpen] = useState(false);
+  const [editingReview, setEditingReview] = useState<Review | null>(null);
+  const [reviewQuote, setReviewQuote] = useState("");
+  const [reviewName, setReviewName] = useState("");
+  const [reviewRole, setReviewRole] = useState("");
+  const [reviewPhotoFile, setReviewPhotoFile] = useState<File | null>(null);
+  const [removeReviewPhoto, setRemoveReviewPhoto] = useState(false);
+  const [savingReview, setSavingReview] = useState(false);
+  const [togglingReviews, setTogglingReviews] = useState(false);
   const [siteError, setSiteError] = useState("");
   const [adminMessage, setAdminMessage] = useState("");
 
@@ -400,6 +440,11 @@ export default function StahleckerSite() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [adminMode]);
 
+  useEffect(() => {
+    void loadReviews();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adminMode]);
+
   function changeLanguage(nextLanguage: Language) {
     setLanguage(nextLanguage);
     window.localStorage.setItem("stahlecker-language", nextLanguage);
@@ -445,6 +490,8 @@ export default function StahleckerSite() {
     setTextEditor(null);
     setUploadCategory(null);
     setEditingPhoto(null);
+    setEditingReview(null);
+    setReviewEditorOpen(false);
     setAdminMessage("");
     setSiteError("");
     const heeftToegang = window.localStorage.getItem("stahlecker-volledige-site") === "true";
@@ -501,6 +548,26 @@ export default function StahleckerSite() {
     }
 
     setPhotos(data ?? []);
+  }
+
+  async function loadReviews() {
+    const [reviewsResult, settingsResult] = await Promise.all([
+      supabase.from("reviews").select("*").order("sort_order", { ascending: true }).order("created_at", { ascending: true }),
+      supabase.from("review_settings").select("section_enabled").eq("id", 1).maybeSingle(),
+    ]);
+
+    if (reviewsResult.error) {
+      if (adminMode) setSiteError(`Reviews konden niet worden geladen: ${reviewsResult.error.message}`);
+      return;
+    }
+
+    if (settingsResult.error) {
+      if (adminMode) setSiteError(`Reviewinstelling kon niet worden geladen: ${settingsResult.error.message}`);
+      return;
+    }
+
+    setReviews((reviewsResult.data ?? []) as Review[]);
+    setReviewsEnabled(settingsResult.data?.section_enabled ?? true);
   }
 
   const groupedPhotos = useMemo(
@@ -878,6 +945,206 @@ export default function StahleckerSite() {
     if (editingPhoto?.id === photo.id) setEditingPhoto(null);
     await loadPhotos();
     setAdminMessage(t.photoDeleted);
+  }
+
+  function openNewReview() {
+    setEditingReview(null);
+    setReviewQuote("");
+    setReviewName("");
+    setReviewRole("");
+    setReviewPhotoFile(null);
+    setRemoveReviewPhoto(false);
+    setSiteError("");
+    setAdminMessage("");
+    setReviewEditorOpen(true);
+  }
+
+  function openReviewEditor(review: Review) {
+    setEditingReview(review);
+    setReviewQuote(review.quote_original);
+    setReviewName(review.name);
+    setReviewRole(review.role_original ?? "");
+    setReviewPhotoFile(null);
+    setRemoveReviewPhoto(false);
+    setSiteError("");
+    setAdminMessage("");
+    setReviewEditorOpen(true);
+  }
+
+  async function translateReview(quote: string, role: string) {
+    const { data } = await supabase.auth.getSession();
+    const accessToken = data.session?.access_token;
+    if (!accessToken) throw new Error(t.noRights);
+
+    const response = await fetch("/api/translate-review", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({ quote, role }),
+    });
+
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(result.error || t.reviewTranslationFailed);
+    }
+
+    return result as {
+      source_language: string;
+      quote_nl: string;
+      role_nl: string | null;
+      quote_en: string;
+      role_en: string | null;
+    };
+  }
+
+  async function saveReview() {
+    const quote = reviewQuote.trim();
+    const name = reviewName.trim();
+    const role = reviewRole.trim();
+
+    if (!quote) {
+      setSiteError(t.reviewQuoteRequired);
+      return;
+    }
+    if (quote.length > 250) {
+      setSiteError(t.reviewTooLong);
+      return;
+    }
+    if (!name) {
+      setSiteError(t.reviewNameRequired);
+      return;
+    }
+    if (reviewPhotoFile && !["image/jpeg", "image/png", "image/webp"].includes(reviewPhotoFile.type)) {
+      setSiteError(`${reviewPhotoFile.name}: ${t.fileInvalid}`);
+      return;
+    }
+
+    setSavingReview(true);
+    setSiteError("");
+    setAdminMessage("");
+
+    let translations: Awaited<ReturnType<typeof translateReview>>;
+    try {
+      translations = await translateReview(quote, role);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : t.reviewTranslationFailed;
+      setSiteError(`${t.reviewTranslationFailed}: ${message}`);
+      setSavingReview(false);
+      return;
+    }
+
+    let newPhotoPath: string | null = null;
+    if (reviewPhotoFile) {
+      try {
+        const optimizedPhoto = await optimizeImageForWeb(reviewPhotoFile, 640, 0.84);
+        const safeName = sanitizeFileName(optimizedPhoto.name);
+        newPhotoPath = `reviews/${crypto.randomUUID()}-${safeName}`;
+
+        const { error: storageError } = await supabase.storage
+          .from("portfolio")
+          .upload(newPhotoPath, optimizedPhoto, {
+            cacheControl: "3600",
+            upsert: false,
+            contentType: optimizedPhoto.type,
+          });
+
+        if (storageError) throw storageError;
+      } catch (error) {
+        const message = error instanceof Error ? error.message : t.uploadFailed;
+        setSiteError(`${t.uploadFailed}: ${message}`);
+        setSavingReview(false);
+        return;
+      }
+    }
+
+    const previousPhotoPath = editingReview?.photo_path ?? null;
+    const photoPath = newPhotoPath ?? (removeReviewPhoto ? null : previousPhotoPath);
+
+    const payload = {
+      quote_original: quote,
+      name,
+      role_original: role || null,
+      source_language: translations.source_language,
+      quote_nl: translations.quote_nl,
+      role_nl: translations.role_nl,
+      quote_en: translations.quote_en,
+      role_en: translations.role_en,
+      photo_path: photoPath,
+    };
+
+    let dbError = null;
+    if (editingReview) {
+      const result = await supabase.from("reviews").update(payload).eq("id", editingReview.id);
+      dbError = result.error;
+    } else {
+      const nextSortOrder = reviews.length === 0 ? 0 : Math.max(...reviews.map((review) => review.sort_order)) + 1;
+      const result = await supabase.from("reviews").insert({ ...payload, sort_order: nextSortOrder });
+      dbError = result.error;
+    }
+
+    if (dbError) {
+      if (newPhotoPath) await supabase.storage.from("portfolio").remove([newPhotoPath]);
+      setSiteError(`${t.storeFailed}: ${dbError.message}`);
+      setSavingReview(false);
+      return;
+    }
+
+    if (previousPhotoPath && previousPhotoPath !== photoPath) {
+      await supabase.storage.from("portfolio").remove([previousPhotoPath]);
+    }
+
+    await loadReviews();
+    setReviewEditorOpen(false);
+    setEditingReview(null);
+    setReviewPhotoFile(null);
+    setSavingReview(false);
+    setAdminMessage(t.reviewSaved);
+  }
+
+  async function deleteReview(review: Review) {
+    if (!window.confirm(t.confirmReviewDelete)) return;
+
+    setSiteError("");
+    setAdminMessage("");
+
+    const { error } = await supabase.from("reviews").delete().eq("id", review.id);
+    if (error) {
+      setSiteError(`${t.dbUpdateError}: ${error.message}`);
+      return;
+    }
+
+    if (review.photo_path) {
+      await supabase.storage.from("portfolio").remove([review.photo_path]);
+    }
+
+    setReviewEditorOpen(false);
+    setEditingReview(null);
+    await loadReviews();
+    setAdminMessage(t.reviewDeleted);
+  }
+
+  async function toggleReviewsSection() {
+    setTogglingReviews(true);
+    setSiteError("");
+    setAdminMessage("");
+
+    const nextValue = !reviewsEnabled;
+    const { error } = await supabase
+      .from("review_settings")
+      .update({ section_enabled: nextValue, updated_at: new Date().toISOString() })
+      .eq("id", 1);
+
+    if (error) {
+      setSiteError(`${t.dbUpdateError}: ${error.message}`);
+      setTogglingReviews(false);
+      return;
+    }
+
+    setReviewsEnabled(nextValue);
+    setTogglingReviews(false);
+    setAdminMessage(t.reviewSectionUpdated);
   }
 
   async function saveAboutImage() {
@@ -1362,6 +1629,82 @@ export default function StahleckerSite() {
           </div>
         </section>
 
+        {((reviewsEnabled && reviews.length > 0) || adminMode) && (
+          <section className={`${styles.section} ${styles.reviewsSection} ${!reviewsEnabled ? styles.reviewsSectionDisabled : ""}`}>
+            <div className={styles.container}>
+              <div className={styles.reviewsHeader}>
+                <div>
+                  <p className={styles.eyebrow}>{t.reviewsEyebrow}</p>
+                  <h2 className={styles.sectionHeading}>{t.reviewsHeading}</h2>
+                </div>
+
+                {adminMode && (
+                  <div className={styles.reviewsAdminActions}>
+                    <button
+                      type="button"
+                      className={styles.inlineAdminButton}
+                      onClick={() => void toggleReviewsSection()}
+                      disabled={togglingReviews}
+                    >
+                      {reviewsEnabled ? t.disableReviews : t.enableReviews}
+                    </button>
+                    <button type="button" className={styles.addPhotoButton} onClick={openNewReview}>
+                      {t.addReview}
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {adminMode && (
+                <p className={styles.reviewsAdminStatus}>
+                  {reviewsEnabled ? t.reviewsOn : t.reviewsOff}
+                </p>
+              )}
+            </div>
+
+            {reviews.length > 0 ? (
+              <div className={styles.reviewsViewport}>
+                <div className={`${styles.reviewsTrack} ${reviews.length > 1 && !adminMode ? styles.reviewsTrackAnimated : ""}`}>
+                  {[0, ...(reviews.length > 1 && !adminMode ? [1] : [])].map((copyIndex) => (
+                    <div className={styles.reviewsSet} key={copyIndex} aria-hidden={copyIndex === 1 ? true : undefined}>
+                      {reviews.map((review) => {
+                        const quote = language === "en" ? review.quote_en : review.quote_nl;
+                        const role = language === "en" ? review.role_en : review.role_nl;
+                        const imageUrl = review.photo_path
+                          ? supabase.storage.from("portfolio").getPublicUrl(review.photo_path).data.publicUrl
+                          : null;
+
+                        return (
+                          <article className={styles.reviewItem} key={`${copyIndex}-${review.id}`}>
+                            <blockquote className={styles.reviewQuote}>“{quote || review.quote_original}”</blockquote>
+                            <div className={styles.reviewPerson}>
+                              {imageUrl && (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img src={imageUrl} alt="" className={styles.reviewAvatar} />
+                              )}
+                              <div className={styles.reviewPersonText}>
+                                <strong>{review.name}</strong>
+                                {(role || review.role_original) && <span>{role || review.role_original}</span>}
+                              </div>
+                            </div>
+                            {adminMode && copyIndex === 0 && (
+                              <button type="button" className={styles.reviewEditButton} onClick={() => openReviewEditor(review)}>
+                                {t.editReview}
+                              </button>
+                            )}
+                          </article>
+                        );
+                      })}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              adminMode && <div className={styles.container}><p className={styles.adminEmptyPortfolio}>{t.noReviews}</p></div>
+            )}
+          </section>
+        )}
+
         <section id="offerte" className={styles.section}>
           <div className={styles.container}>
             <div className={styles.contactHeadingWrap}>
@@ -1615,6 +1958,117 @@ export default function StahleckerSite() {
                 <button type="button" className={styles.adminSecondaryButton} onClick={() => setEditingPhoto(null)}>{t.cancel}</button>
                 <button type="button" className={styles.adminPrimaryButton} onClick={() => void savePhoto()} disabled={savingPhoto}>
                   {savingPhoto ? t.saving : t.save}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {adminMode && reviewEditorOpen && (
+        <div className={styles.adminModalBackdrop} role="dialog" aria-modal="true" aria-label={editingReview ? t.editReview : t.addReview}>
+          <div className={styles.adminModal}>
+            <div className={styles.adminModalHead}>
+              <div>
+                <p className={styles.adminModalEyebrow}>{t.reviewsEyebrow}</p>
+                <h2>{editingReview ? t.editReview : t.addReview.replace("+ ", "")}</h2>
+              </div>
+              <button
+                type="button"
+                className={styles.adminModalClose}
+                onClick={() => !savingReview && setReviewEditorOpen(false)}
+                aria-label={t.close}
+              >
+                ×
+              </button>
+            </div>
+
+            <div className={styles.adminModalFields}>
+              <label className={styles.adminField}>
+                <span>{t.reviewQuote}</span>
+                <textarea
+                  rows={5}
+                  maxLength={250}
+                  value={reviewQuote}
+                  onChange={(event) => setReviewQuote(event.target.value)}
+                  disabled={savingReview}
+                />
+                <small className={styles.reviewCharCount}>{reviewQuote.length}/250</small>
+              </label>
+
+              <label className={styles.adminField}>
+                <span>{t.name}</span>
+                <input
+                  type="text"
+                  value={reviewName}
+                  onChange={(event) => setReviewName(event.target.value)}
+                  disabled={savingReview}
+                />
+              </label>
+
+              <label className={styles.adminField}>
+                <span>{t.reviewRole}</span>
+                <input
+                  type="text"
+                  value={reviewRole}
+                  onChange={(event) => setReviewRole(event.target.value)}
+                  disabled={savingReview}
+                />
+              </label>
+
+              <label className={styles.adminFilePicker}>
+                <span>{t.reviewPhoto}</span>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={(event) => {
+                    setReviewPhotoFile(event.target.files?.[0] ?? null);
+                    setRemoveReviewPhoto(false);
+                  }}
+                  disabled={savingReview}
+                />
+              </label>
+
+              {(reviewPhotoFile || editingReview?.photo_path) && !removeReviewPhoto && (
+                <div className={styles.reviewAdminPreview}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={
+                      reviewPhotoFile
+                        ? URL.createObjectURL(reviewPhotoFile)
+                        : supabase.storage.from("portfolio").getPublicUrl(editingReview!.photo_path!).data.publicUrl
+                    }
+                    alt=""
+                  />
+                </div>
+              )}
+
+              {editingReview?.photo_path && !reviewPhotoFile && (
+                <label className={styles.adminCheckbox}>
+                  <input
+                    type="checkbox"
+                    checked={removeReviewPhoto}
+                    onChange={(event) => setRemoveReviewPhoto(event.target.checked)}
+                    disabled={savingReview}
+                  />
+                  {t.removeCurrentPhoto}
+                </label>
+              )}
+            </div>
+
+            <div className={styles.adminModalFooterBetween}>
+              {editingReview ? (
+                <button type="button" className={styles.adminDangerButton} onClick={() => void deleteReview(editingReview)} disabled={savingReview}>
+                  {t.reviewDelete}
+                </button>
+              ) : <span />}
+
+              <div className={styles.adminModalFooterActions}>
+                <button type="button" className={styles.adminSecondaryButton} onClick={() => setReviewEditorOpen(false)} disabled={savingReview}>
+                  {t.cancel}
+                </button>
+                <button type="button" className={styles.adminPrimaryButton} onClick={() => void saveReview()} disabled={savingReview}>
+                  {savingReview ? t.saving : t.save}
                 </button>
               </div>
             </div>
