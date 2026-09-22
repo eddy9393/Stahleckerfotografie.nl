@@ -368,7 +368,6 @@ export default function StahleckerSite() {
   const t = UI_TEXT[language];
 
   const [menuOpen, setMenuOpen] = useState(false);
-  const [workshopExpanded, setWorkshopExpanded] = useState(false);
   const [aboutExpanded, setAboutExpanded] = useState(false);
   const [toegangGecontroleerd, setToegangGecontroleerd] = useState(false);
   const [volledigeSite, setVolledigeSite] = useState(false);
@@ -1584,17 +1583,7 @@ export default function StahleckerSite() {
               <div className={styles.workshopBody}>
                 <p>{content.workshop_body_1}</p>
                 <p>{content.workshop_body_2}</p>
-                {workshopExpanded && <p>{content.workshop_body_3}</p>}
-                {content.workshop_body_3 && (
-                  <button
-                    type="button"
-                    className={styles.readMoreButton}
-                    onClick={() => setWorkshopExpanded((current) => !current)}
-                    aria-expanded={workshopExpanded}
-                  >
-                    {workshopExpanded ? t.readLess : t.readMore}
-                  </button>
-                )}
+                {content.workshop_body_3 && <p>{content.workshop_body_3}</p>}
               </div>
             </div>
           </div>
