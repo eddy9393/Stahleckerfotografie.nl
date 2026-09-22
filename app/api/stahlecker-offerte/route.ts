@@ -87,26 +87,11 @@ async function sendEmail({
   dienst: string;
   bericht: string;
 }) {
-  const nodemailer = await import("nodemailer");
+  const apiKey = process.env.RESEND_API_KEY;
 
-  const host = process.env.SMTP_HOST || "mail.stahleckerfotografie.nl";
-  const port = Number(process.env.SMTP_PORT || "465");
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
-
-  if (!user || !pass) {
-    throw new Error("SMTP credentials ontbreken.");
+  if (!apiKey) {
+    throw new Error("RESEND_API_KEY ontbreekt.");
   }
-
-  const transporter = nodemailer.createTransport({
-    host,
-    port,
-    secure: port === 465,
-    auth: {
-      user,
-      pass,
-    },
-  });
 
   const safeNaam = escapeHtml(naam);
   const safeEmail = escapeHtml(email);
@@ -114,39 +99,59 @@ async function sendEmail({
   const safeDienst = escapeHtml(dienst);
   const safeBericht = escapeHtml(bericht).replace(/\n/g, "<br>");
 
-  await transporter.sendMail({
-    from: `"Stahlecker Fotografie — website" <${user}>`,
-    to: TO_EMAIL,
-    replyTo: email,
-    subject: `Nieuwe fotografieaanvraag — ${dienst}`,
-    text: [
-      "Nieuwe fotografieaanvraag via stahleckerfotografie.nl",
-      "",
-      `Naam: ${naam}`,
-      `E-mail: ${email}`,
-      telefoon ? `Telefoon: ${telefoon}` : null,
-      `Gewenste dienst: ${dienst}`,
-      bericht ? `Aanvraag: ${bericht}` : null,
-    ]
-      .filter(Boolean)
-      .join("\n"),
-    html: `
-      <div style="font-family:Arial,sans-serif;max-width:620px;margin:0 auto;color:#1c1c1c">
-        <h2 style="margin:0 0 20px">Nieuwe fotografieaanvraag</h2>
-        <table style="width:100%;border-collapse:collapse">
-          <tr><td style="padding:8px 0;font-weight:700;width:155px">Naam</td><td>${safeNaam}</td></tr>
-          <tr><td style="padding:8px 0;font-weight:700">E-mail</td><td><a href="mailto:${safeEmail}">${safeEmail}</a></td></tr>
-          ${safeTelefoon ? `<tr><td style="padding:8px 0;font-weight:700">Telefoon</td><td>${safeTelefoon}</td></tr>` : ""}
-          <tr><td style="padding:8px 0;font-weight:700">Gewenste dienst</td><td>${safeDienst}</td></tr>
-          ${safeBericht ? `<tr><td style="padding:8px 0;font-weight:700;vertical-align:top">Aanvraag</td><td style="line-height:1.6">${safeBericht}</td></tr>` : ""}
-        </table>
-        <hr style="margin:24px 0;border:0;border-top:1px solid #ddd">
-        <p style="margin:0;color:#777;font-size:12px">Verzonden via het contactformulier op stahleckerfotografie.nl</p>
-      </div>
-    `,
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: "Stahlecker Fotografie <info@stahleckerfotografie.nl>",
+      to: [TO_EMAIL],
+      reply_to: email,
+      subject: `Nieuwe fotografieaanvraag — ${dienst}`,
+      text: [
+        "Nieuwe fotografieaanvraag via stahleckerfotografie.nl",
+        "",
+        `Naam: ${naam}`,
+        `E-mail: ${email}`,
+        telefoon ? `Telefoon: ${telefoon}` : null,
+        `Gewenste dienst: ${dienst}`,
+        bericht ? `Aanvraag: ${bericht}` : null,
+      ]
+        .filter(Boolean)
+        .join("\n"),
+      html: `
+        <div style="font-family:Arial,sans-serif;max-width:620px;margin:0 auto;color:#1c1c1c">
+          <h2 style="margin:0 0 20px">Nieuwe fotografieaanvraag</h2>
+          <table style="width:100%;border-collapse:collapse">
+            <tr><td style="padding:8px 0;font-weight:700;width:155px">Naam</td><td>${safeNaam}</td></tr>
+            <tr><td style="padding:8px 0;font-weight:700">E-mail</td><td><a href="mailto:${safeEmail}">${safeEmail}</a></td></tr>
+            ${safeTelefoon ? `<tr><td style="padding:8px 0;font-weight:700">Telefoon</td><td>${safeTelefoon}</td></tr>` : ""}
+            <tr><td style="padding:8px 0;font-weight:700">Gewenste dienst</td><td>${safeDienst}</td></tr>
+            ${safeBericht ? `<tr><td style="padding:8px 0;font-weight:700;vertical-align:top">Aanvraag</td><td style="line-height:1.6">${safeBericht}</td></tr>` : ""}
+          </table>
+          <hr style="margin:24px 0;border:0;border-top:1px solid #ddd">
+          <p style="margin:0;color:#777;font-size:12px">Verzonden via het contactformulier op stahleckerfotografie.nl</p>
+        </div>
+      `,
+    }),
+    cache: "no-store",
   });
-}
 
+  if (!response.ok) {
+    let detail = `HTTP ${response.status}`;
+
+    try {
+      const body = await response.text();
+      if (body) detail = `${detail}: ${body.slice(0, 500)}`;
+    } catch {
+      // Alleen voor logging; de bezoeker krijgt geen technische details te zien.
+    }
+
+    throw new Error(`Resend versturen mislukt (${detail}).`);
+  }
+}
 export async function POST(req: NextRequest) {
   const ip =
     req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
