@@ -30,6 +30,45 @@ const CATEGORIES = [
   { value: "workshops", label: { nl: "Workshops en fotografielessen", en: "Workshops and photography lessons" } },
 ] as const;
 
+const REVIEW_SERVICES = [
+  { value: "belangrijke-momenten", label: { nl: "Belangrijke momenten", en: "Important moments" } },
+  { value: "portretfotografie", label: { nl: "Portretfotografie", en: "Portrait photography" } },
+  { value: "workshops", label: { nl: "Fotografieworkshops en lessen", en: "Photography workshops and lessons" } },
+] as const;
+
+function normalizeReviewService(value: string | null) {
+  if (!value) return "";
+  const normalized = value.trim().toLowerCase();
+
+  if (["belangrijke-momenten", "belangrijke momenten", "important moments"].includes(normalized)) {
+    return "belangrijke-momenten";
+  }
+  if (["portretfotografie", "portrait photography"].includes(normalized)) {
+    return "portretfotografie";
+  }
+  if ([
+    "workshops",
+    "fotografieles",
+    "fotografielessen",
+    "fotografieworkshop",
+    "fotografieworkshops",
+    "fotografieworkshops en lessen",
+    "photography workshop",
+    "photography workshops",
+    "photography workshops and lessons",
+  ].includes(normalized)) {
+    return "workshops";
+  }
+
+  return "";
+}
+
+function getReviewServiceLabel(value: string | null, language: Language) {
+  const normalized = normalizeReviewService(value);
+  const service = REVIEW_SERVICES.find((item) => item.value === normalized);
+  return service ? service.label[language] : value ?? "";
+}
+
 const UI_TEXT = {
   nl: {
     access: "Toegang", code: "Code", view: "Bekijken", codeWrong: "Code onjuist",
@@ -60,7 +99,7 @@ const UI_TEXT = {
     aboutPhoto: "Foto bij Over mij", chooseReplacement: "Kies een nieuwe foto", replacePhoto: "Foto vervangen", aboutPhotoSaved: "Foto bij Over mij is aangepast.",
     reviewsEyebrow: "Ervaringen", reviewsHeading: "Wat anderen zeggen", addReview: "+ Review toevoegen", editReview: "Review wijzigen",
     reviewsOn: "Reviews zichtbaar", reviewsOff: "Reviews verborgen", enableReviews: "Reviews aanzetten", disableReviews: "Reviews uitzetten",
-    noReviews: "Nog geen reviews toegevoegd.", reviewQuote: "Reviewquote", reviewRole: "Functie / omschrijving", reviewPhoto: "Kleine foto (optioneel)",
+    noReviews: "Nog geen reviews toegevoegd.", reviewQuote: "Reviewquote", reviewRole: "Dienst", reviewServicePlaceholder: "Kies een dienst (optioneel)", reviewPhoto: "Kleine foto (optioneel)",
     reviewNameRequired: "Vul een naam in.", reviewQuoteRequired: "Vul een review in.", reviewTooLong: "De review mag maximaal 250 tekens bevatten.",
     reviewSaved: "Review is opgeslagen.", reviewDeleted: "Review is verwijderd.", reviewDelete: "Review verwijderen",
     confirmReviewDelete: "Weet je zeker dat je deze review definitief wilt verwijderen?", reviewTranslationFailed: "Automatische vertaling is mislukt",
@@ -95,7 +134,7 @@ const UI_TEXT = {
     aboutPhoto: "About me photo", chooseReplacement: "Choose a new photo", replacePhoto: "Replace photo", aboutPhotoSaved: "About me photo has been updated.",
     reviewsEyebrow: "Reviews", reviewsHeading: "What others say", addReview: "+ Add review", editReview: "Edit review",
     reviewsOn: "Reviews visible", reviewsOff: "Reviews hidden", enableReviews: "Enable reviews", disableReviews: "Disable reviews",
-    noReviews: "No reviews have been added yet.", reviewQuote: "Review quote", reviewRole: "Role / description", reviewPhoto: "Small photo (optional)",
+    noReviews: "No reviews have been added yet.", reviewQuote: "Review quote", reviewRole: "Service", reviewServicePlaceholder: "Choose a service (optional)", reviewPhoto: "Small photo (optional)",
     reviewNameRequired: "Enter a name.", reviewQuoteRequired: "Enter a review.", reviewTooLong: "The review may contain up to 250 characters.",
     reviewSaved: "Review has been saved.", reviewDeleted: "Review has been deleted.", reviewDelete: "Delete review",
     confirmReviewDelete: "Are you sure you want to permanently delete this review?", reviewTranslationFailed: "Automatic translation failed",
@@ -963,7 +1002,7 @@ export default function StahleckerSite() {
     setEditingReview(review);
     setReviewQuote(review.quote_original);
     setReviewName(review.name);
-    setReviewRole(review.role_original ?? "");
+    setReviewRole(normalizeReviewService(review.role_original));
     setReviewPhotoFile(null);
     setRemoveReviewPhoto(false);
     setSiteError("");
@@ -1025,17 +1064,20 @@ export default function StahleckerSite() {
     const previousPhotoPath = editingReview?.photo_path ?? null;
     const photoPath = newPhotoPath ?? (removeReviewPhoto ? null : previousPhotoPath);
 
+    const roleNl = role ? getReviewServiceLabel(role, "nl") : null;
+    const roleEn = role ? getReviewServiceLabel(role, "en") : null;
+
     const payload = {
       quote_original: quote,
       name,
       role_original: role || null,
       source_language: null,
-      // De bestaande NL/EN-kolommen blijven gevuld om compatibel te blijven
-      // met de al uitgevoerde Supabase-migratie. Er vindt geen vertaling plaats.
+      // De reviewquote zelf wordt niet vertaald. De dienst is een vaste keuze
+      // en krijgt alleen het bestaande NL/EN-label van de website.
       quote_nl: quote,
-      role_nl: role || null,
+      role_nl: roleNl,
       quote_en: quote,
-      role_en: role || null,
+      role_en: roleEn,
       photo_path: photoPath,
     };
 
@@ -1628,20 +1670,28 @@ export default function StahleckerSite() {
             </div>
 
             {reviews.length > 0 ? (
-              <div className={styles.reviewsViewport}>
-                <div className={`${styles.reviewsTrack} ${reviews.length > 1 && !adminMode ? styles.reviewsTrackAnimated : ""}`}>
-                  {[0, ...(reviews.length > 1 && !adminMode ? [1] : [])].map((copyIndex) => (
-                    <div className={styles.reviewsSet} key={copyIndex} aria-hidden={copyIndex === 1 ? true : undefined}>
+              <div
+                className={`${styles.reviewsViewport} ${reviews.length <= 3 ? styles.reviewsViewportStatic : ""} ${adminMode ? styles.reviewsViewportManual : ""}`}
+              >
+                <div
+                  className={`${styles.reviewsTrack} ${reviews.length > 3 && !adminMode ? styles.reviewsTrackAnimated : ""} ${reviews.length <= 3 ? styles.reviewsTrackStatic : ""}`}
+                >
+                  {[0, ...(reviews.length > 3 && !adminMode ? [1] : [])].map((copyIndex) => (
+                    <div
+                      className={`${styles.reviewsSet} ${reviews.length <= 3 ? styles.reviewsSetStatic : ""} ${reviews.length === 1 ? styles.reviewsCount1 : ""} ${reviews.length === 2 ? styles.reviewsCount2 : ""} ${reviews.length === 3 ? styles.reviewsCount3 : ""}`}
+                      key={copyIndex}
+                      aria-hidden={copyIndex === 1 ? true : undefined}
+                    >
                       {reviews.map((review) => {
                         const quote = review.quote_original;
-                        const role = review.role_original;
+                        const role = getReviewServiceLabel(review.role_original, language);
                         const imageUrl = review.photo_path
                           ? supabase.storage.from("portfolio").getPublicUrl(review.photo_path).data.publicUrl
                           : null;
 
                         return (
                           <article className={styles.reviewItem} key={`${copyIndex}-${review.id}`}>
-                            <blockquote className={styles.reviewQuote}>“{quote || review.quote_original}”</blockquote>
+                            <blockquote className={styles.reviewQuote}>“{quote}”</blockquote>
                             <div className={styles.reviewPerson}>
                               {imageUrl && (
                                 // eslint-disable-next-line @next/next/no-img-element
@@ -1649,7 +1699,7 @@ export default function StahleckerSite() {
                               )}
                               <div className={styles.reviewPersonText}>
                                 <strong>{review.name}</strong>
-                                {(role || review.role_original) && <span>{role || review.role_original}</span>}
+                                {role && <span>{role}</span>}
                               </div>
                             </div>
                             {adminMode && copyIndex === 0 && (
@@ -1973,12 +2023,18 @@ export default function StahleckerSite() {
 
               <label className={styles.adminField}>
                 <span>{t.reviewRole}</span>
-                <input
-                  type="text"
+                <select
                   value={reviewRole}
                   onChange={(event) => setReviewRole(event.target.value)}
                   disabled={savingReview}
-                />
+                >
+                  <option value="">{t.reviewServicePlaceholder}</option>
+                  {REVIEW_SERVICES.map((service) => (
+                    <option key={service.value} value={service.value}>
+                      {service.label[language]}
+                    </option>
+                  ))}
+                </select>
               </label>
 
               <label className={styles.adminFilePicker}>
