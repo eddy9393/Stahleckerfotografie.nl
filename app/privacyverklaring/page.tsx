@@ -121,11 +121,19 @@ export default function PrivacyverklaringPage() {
         </section>
 
         <section>
-          <h2>8. Analytics en tracking</h2>
+          <h2>8. Bezoekstatistieken</h2>
           <p>
-            Op dit moment gebruikt deze website geen advertentietracking of
-            uitgebreide bezoekersanalytics. Als dit in de toekomst verandert,
-            wordt deze privacyverklaring waar nodig aangepast.
+            Deze website houdt een eenvoudige, privacyvriendelijke telling van
+            het aantal bezoeken bij. Per browsersessie wordt maximaal één bezoek
+            per dag geregistreerd. Hiervoor wordt tijdelijk sessionStorage in de
+            browser gebruikt om te voorkomen dat het verversen van dezelfde
+            pagina direct als een nieuw bezoek wordt geteld.
+          </p>
+          <p>
+            Voor deze telling worden geen namen, e-mailadressen, IP-adressen of
+            unieke browserprofielen opgeslagen. In de database wordt alleen het
+            totale aantal bezoeken per dag bewaard. Er wordt geen
+            advertentietracking gebruikt.
           </p>
         </section>
 

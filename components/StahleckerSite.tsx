@@ -106,6 +106,10 @@ const UI_TEXT = {
     confirmReviewDelete: "Weet je zeker dat je deze review definitief wilt verwijderen?", reviewTranslationFailed: "Automatische vertaling is mislukt",
     removeCurrentPhoto: "Huidige foto verwijderen", reviewSectionUpdated: "Reviewsectie is aangepast.",
     readMore: "Meer lezen", readLess: "Minder lezen",
+    changePassword: "Wachtwoord wijzigen", currentPassword: "Huidig wachtwoord", newPassword: "Nieuw wachtwoord", confirmPassword: "Herhaal nieuw wachtwoord",
+    passwordMismatch: "De nieuwe wachtwoorden komen niet overeen.", passwordTooShort: "Gebruik minimaal 8 tekens voor het nieuwe wachtwoord.", passwordWrong: "Het huidige wachtwoord is niet juist.", passwordUpdated: "Het wachtwoord is gewijzigd.",
+    placeholderEnable: "Placeholder aanzetten", placeholderDisable: "Placeholder uitzetten", placeholderEnabled: "Placeholder staat aan.", placeholderDisabled: "Placeholder staat uit. De volledige website is openbaar.",
+    visitors: "Bezoeken", visitorsToday: "Vandaag", visitors7Days: "7 dagen", visitors30Days: "30 dagen", visitorsTotal: "Totaal",
   },
   en: {
     access: "Access", code: "Code", view: "View", codeWrong: "Incorrect code",
@@ -143,6 +147,10 @@ const UI_TEXT = {
     confirmReviewDelete: "Are you sure you want to permanently delete this review?", reviewTranslationFailed: "Automatic translation failed",
     removeCurrentPhoto: "Remove current photo", reviewSectionUpdated: "Review section has been updated.",
     readMore: "Read more", readLess: "Read less",
+    changePassword: "Change password", currentPassword: "Current password", newPassword: "New password", confirmPassword: "Repeat new password",
+    passwordMismatch: "The new passwords do not match.", passwordTooShort: "Use at least 8 characters for the new password.", passwordWrong: "The current password is incorrect.", passwordUpdated: "The password has been changed.",
+    placeholderEnable: "Enable placeholder", placeholderDisable: "Disable placeholder", placeholderEnabled: "The placeholder is enabled.", placeholderDisabled: "The placeholder is disabled. The full website is public.",
+    visitors: "Visits", visitorsToday: "Today", visitors7Days: "7 days", visitors30Days: "30 days", visitorsTotal: "Total",
   },
 } as const;
 
@@ -175,6 +183,13 @@ type Review = {
 };
 
 type FormStatus = "idle" | "loading" | "success" | "error";
+
+type VisitorStats = {
+  today_visits: number;
+  last_7_days_visits: number;
+  last_30_days_visits: number;
+  total_visits: number;
+};
 
 type UploadDraft = {
   id: string;
@@ -375,6 +390,8 @@ export default function StahleckerSite() {
   const [volledigeSite, setVolledigeSite] = useState(false);
   const [toegangscode, setToegangscode] = useState("");
   const [toegangsfout, setToegangsfout] = useState("");
+  const [placeholderEnabled, setPlaceholderEnabled] = useState(true);
+  const [placeholderSettingLoaded, setPlaceholderSettingLoaded] = useState(false);
 
   const [adminMode, setAdminMode] = useState(false);
   const [adminLoginOpen, setAdminLoginOpen] = useState(false);
@@ -382,6 +399,15 @@ export default function StahleckerSite() {
   const [adminPassword, setAdminPassword] = useState("");
   const [adminAuthLoading, setAdminAuthLoading] = useState(false);
   const [adminAuthError, setAdminAuthError] = useState("");
+  const [passwordEditorOpen, setPasswordEditorOpen] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordSaving, setPasswordSaving] = useState(false);
+  const [passwordError, setPasswordError] = useState("");
+  const [togglingPlaceholder, setTogglingPlaceholder] = useState(false);
+  const [visitorStats, setVisitorStats] = useState<VisitorStats | null>(null);
+  const [visitorStatsLoading, setVisitorStatsLoading] = useState(false);
 
   const [contentByLanguage, setContentByLanguage] = useState<Record<Language, SiteContent>>({
     nl: { ...DEFAULT_SITE_CONTENT_NL },
@@ -451,15 +477,21 @@ export default function StahleckerSite() {
       const heeftToegang = window.localStorage.getItem("stahlecker-volledige-site") === "true";
       if (mounted) setVolledigeSite(heeftToegang);
 
+      let isAdminSession = false;
       const { data } = await supabase.auth.getSession();
       if (data.session) {
         const { data: isAdmin, error: adminError } = await supabase.rpc("is_admin");
         if (!adminError && isAdmin) {
+          isAdminSession = true;
           if (mounted) {
             setAdminMode(true);
             setVolledigeSite(true);
           }
         }
+      }
+
+      if (!isAdminSession) {
+        void trackPublicVisit();
       }
 
       if (mounted) setToegangGecontroleerd(true);
@@ -488,6 +520,15 @@ export default function StahleckerSite() {
 
   useEffect(() => {
     void loadReviews();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adminMode]);
+
+  useEffect(() => {
+    if (adminMode) {
+      void loadVisitorStats();
+    } else {
+      setVisitorStats(null);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [adminMode]);
 
@@ -538,6 +579,11 @@ export default function StahleckerSite() {
     setEditingPhoto(null);
     setEditingReview(null);
     setReviewEditorOpen(false);
+    setPasswordEditorOpen(false);
+    setCurrentPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
+    setPasswordError("");
     setAdminMessage("");
     setSiteError("");
     const heeftToegang = window.localStorage.getItem("stahlecker-volledige-site") === "true";
@@ -549,15 +595,22 @@ export default function StahleckerSite() {
 
     if (error) {
       if (adminMode) setSiteError(`${t.textLoadError}: ${error.message}`);
+      setPlaceholderSettingLoaded(true);
       return;
     }
 
     const nextNl: SiteContent = { ...DEFAULT_SITE_CONTENT_NL };
     const nextEn: SiteContent = { ...DEFAULT_SITE_CONTENT_EN };
     let nextAboutImagePath = "";
+    let nextPlaceholderEnabled = true;
 
     for (const row of data ?? []) {
       const rawKey = String(row.key);
+
+      if (rawKey === "placeholder_enabled") {
+        nextPlaceholderEnabled = String(row.value ?? "true").toLowerCase() !== "false";
+        continue;
+      }
 
       if (rawKey === "about_image_path") {
         nextAboutImagePath = String(row.value ?? "");
@@ -575,6 +628,8 @@ export default function StahleckerSite() {
 
     setContentByLanguage({ nl: nextNl, en: nextEn });
     setAboutImagePath(nextAboutImagePath);
+    setPlaceholderEnabled(nextPlaceholderEnabled);
+    setPlaceholderSettingLoaded(true);
   }
 
   async function loadPhotos() {
@@ -716,6 +771,130 @@ export default function StahleckerSite() {
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [lightboxPhotoId, lightboxIndex, lightboxPhotos]);
+
+  async function trackPublicVisit() {
+    try {
+      const trackedDayKey = "stahlecker-visit-counted-day";
+      const today = new Date().toISOString().slice(0, 10);
+      if (window.sessionStorage.getItem(trackedDayKey) === today) return;
+
+      const { error } = await supabase.rpc("track_site_visit");
+      if (!error) {
+        window.sessionStorage.setItem(trackedDayKey, today);
+      }
+    } catch {
+      // Bezoekstatistieken mogen de publieke website nooit blokkeren.
+    }
+  }
+
+  async function loadVisitorStats() {
+    setVisitorStatsLoading(true);
+    const { data, error } = await supabase.rpc("get_site_visitor_stats");
+
+    if (error) {
+      setVisitorStatsLoading(false);
+      return;
+    }
+
+    const row = Array.isArray(data) ? data[0] : data;
+    if (row) {
+      setVisitorStats({
+        today_visits: Number(row.today_visits ?? 0),
+        last_7_days_visits: Number(row.last_7_days_visits ?? 0),
+        last_30_days_visits: Number(row.last_30_days_visits ?? 0),
+        total_visits: Number(row.total_visits ?? 0),
+      });
+    }
+    setVisitorStatsLoading(false);
+  }
+
+  async function togglePlaceholder() {
+    if (togglingPlaceholder) return;
+
+    const nextValue = !placeholderEnabled;
+    setTogglingPlaceholder(true);
+    setSiteError("");
+    setAdminMessage("");
+
+    const { error } = await supabase.from("site_content").upsert(
+      {
+        key: "placeholder_enabled",
+        value: nextValue ? "true" : "false",
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "key" }
+    );
+
+    if (error) {
+      setSiteError(`${t.textSaveError}: ${error.message}`);
+      setTogglingPlaceholder(false);
+      return;
+    }
+
+    setPlaceholderEnabled(nextValue);
+    setAdminMessage(nextValue ? t.placeholderEnabled : t.placeholderDisabled);
+    setTogglingPlaceholder(false);
+  }
+
+  function openPasswordEditor() {
+    setCurrentPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
+    setPasswordError("");
+    setPasswordEditorOpen(true);
+    setAdminMessage("");
+    setSiteError("");
+  }
+
+  async function handlePasswordChange(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setPasswordError("");
+
+    if (newPassword.length < 8) {
+      setPasswordError(t.passwordTooShort);
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setPasswordError(t.passwordMismatch);
+      return;
+    }
+
+    setPasswordSaving(true);
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    const userEmail = userData.user?.email;
+
+    if (userError || !userEmail) {
+      setPasswordError(language === "nl" ? "Je beheersessie kon niet worden gecontroleerd." : "Your admin session could not be verified.");
+      setPasswordSaving(false);
+      return;
+    }
+
+    const { error: reauthError } = await supabase.auth.signInWithPassword({
+      email: userEmail,
+      password: currentPassword,
+    });
+
+    if (reauthError) {
+      setPasswordError(t.passwordWrong);
+      setPasswordSaving(false);
+      return;
+    }
+
+    const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
+    if (updateError) {
+      setPasswordError(updateError.message);
+      setPasswordSaving(false);
+      return;
+    }
+
+    setPasswordSaving(false);
+    setPasswordEditorOpen(false);
+    setCurrentPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
+    setAdminMessage(t.passwordUpdated);
+  }
 
   function handleToegang(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -1287,7 +1466,7 @@ export default function StahleckerSite() {
     </div>
   ) : null;
 
-  if (!toegangGecontroleerd || (!volledigeSite && !adminMode)) {
+  if (!toegangGecontroleerd || !placeholderSettingLoaded || (placeholderEnabled && !volledigeSite && !adminMode)) {
     return (
       <div className={`${styles.pagina} ${styles.placeholderPagina}`}>
         <header className={styles.header}>
@@ -1397,31 +1576,6 @@ export default function StahleckerSite() {
 
   return (
     <div className={`${styles.pagina} ${adminMode ? styles.adminMode : ""}`}>
-      {adminMode && (
-        <div className={styles.adminToolbar}>
-          <div className={styles.adminToolbarInner}>
-            <span className={styles.adminToolbarTitle}>{t.adminMode}</span>
-            <div className={styles.adminToolbarActions}>
-              <button type="button" className={styles.adminToolbarButton} onClick={() => openTextEditor("placeholder")}>
-                {t.editPlaceholder}
-              </button>
-              <button type="button" className={styles.adminToolbarButton} onClick={() => openTextEditor("footer")}>
-                {t.editFooter}
-              </button>
-              <button type="button" className={styles.adminToolbarButton} onClick={() => void handleAdminLogout()}>
-                {t.logout}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {adminMode && (siteError || adminMessage) && (
-        <div className={`${styles.adminNotice} ${siteError ? styles.adminNoticeError : styles.adminNoticeSuccess}`}>
-          {siteError || adminMessage}
-        </div>
-      )}
-
       <header className={styles.header}>
         <div className={styles.headerInner}>
           <a href="#top" className={styles.logoLink} aria-label="Stahlecker Fotografie — home">
@@ -1484,6 +1638,58 @@ export default function StahleckerSite() {
           </ul>
         </div>
       </header>
+
+      {adminMode && (
+        <>
+          <div className={styles.adminStatsBar}>
+            <div className={styles.adminStatsInner}>
+              <span className={styles.adminStatsTitle}>{t.visitors}</span>
+              <div className={styles.adminStatsGrid}>
+                {[
+                  [t.visitorsToday, visitorStats?.today_visits],
+                  [t.visitors7Days, visitorStats?.last_7_days_visits],
+                  [t.visitors30Days, visitorStats?.last_30_days_visits],
+                  [t.visitorsTotal, visitorStats?.total_visits],
+                ].map(([label, value]) => (
+                  <div className={styles.adminStat} key={String(label)}>
+                    <strong>{visitorStatsLoading ? "…" : value ?? "—"}</strong>
+                    <span>{label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className={styles.adminToolbar}>
+            <div className={styles.adminToolbarInner}>
+              <span className={styles.adminToolbarTitle}>{t.adminMode}</span>
+              <div className={styles.adminToolbarActions}>
+                <button type="button" className={styles.adminToolbarButton} onClick={() => openTextEditor("placeholder")}>
+                  {t.editPlaceholder}
+                </button>
+                <button type="button" className={styles.adminToolbarButton} onClick={() => void togglePlaceholder()} disabled={togglingPlaceholder}>
+                  {placeholderEnabled ? t.placeholderDisable : t.placeholderEnable}
+                </button>
+                <button type="button" className={styles.adminToolbarButton} onClick={() => openTextEditor("footer")}>
+                  {t.editFooter}
+                </button>
+                <button type="button" className={styles.adminToolbarButton} onClick={openPasswordEditor}>
+                  {t.changePassword}
+                </button>
+                <button type="button" className={styles.adminToolbarButton} onClick={() => void handleAdminLogout()}>
+                  {t.logout}
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {adminMode && (siteError || adminMessage) && (
+        <div className={`${styles.adminNotice} ${siteError ? styles.adminNoticeError : styles.adminNoticeSuccess}`}>
+          {siteError || adminMessage}
+        </div>
+      )}
 
       <main id="top">
         <section className={styles.hero}>
@@ -1856,6 +2062,72 @@ export default function StahleckerSite() {
           </div>
         </div>
       </footer>
+
+      {adminMode && passwordEditorOpen && (
+        <div className={styles.adminModalBackdrop} role="dialog" aria-modal="true" aria-label={t.changePassword}>
+          <div className={styles.adminModal}>
+            <div className={styles.adminModalHead}>
+              <div>
+                <p className={styles.adminModalEyebrow}>{t.admin}</p>
+                <h2>{t.changePassword}</h2>
+              </div>
+              <button
+                type="button"
+                className={styles.adminModalClose}
+                onClick={() => !passwordSaving && setPasswordEditorOpen(false)}
+                aria-label={t.close}
+              >
+                ×
+              </button>
+            </div>
+
+            <form className={styles.adminLoginForm} onSubmit={handlePasswordChange}>
+              <label className={styles.adminField}>
+                <span>{t.currentPassword}</span>
+                <input
+                  type="password"
+                  autoComplete="current-password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  required
+                  autoFocus
+                />
+              </label>
+              <label className={styles.adminField}>
+                <span>{t.newPassword}</span>
+                <input
+                  type="password"
+                  autoComplete="new-password"
+                  minLength={8}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  required
+                />
+              </label>
+              <label className={styles.adminField}>
+                <span>{t.confirmPassword}</span>
+                <input
+                  type="password"
+                  autoComplete="new-password"
+                  minLength={8}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                />
+              </label>
+              {passwordError && <p className={styles.adminLoginError}>{passwordError}</p>}
+              <div className={styles.adminModalFooter}>
+                <button type="button" className={styles.adminSecondaryButton} onClick={() => setPasswordEditorOpen(false)} disabled={passwordSaving}>
+                  {t.cancel}
+                </button>
+                <button type="submit" className={styles.adminPrimaryButton} disabled={passwordSaving}>
+                  {passwordSaving ? t.saving : t.save}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {adminMode && textEditor && (
         <div className={styles.adminModalBackdrop} role="dialog" aria-modal="true" aria-label={TEXT_SECTIONS[textEditor].title[language]}>

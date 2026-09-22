@@ -1369,6 +1369,62 @@
 
 /* ── Visuele adminmodus ───────────────────────────────────────────── */
 
+.adminStatsBar {
+  position: relative;
+  z-index: 82;
+  border-bottom: 1px solid rgba(243, 241, 236, 0.16);
+  background: #151411;
+}
+
+.adminStatsInner {
+  width: 100%;
+  max-width: var(--slk-max);
+  margin: 0 auto;
+  padding: 0.72rem clamp(1.25rem, 4vw, 3rem);
+  display: flex;
+  align-items: center;
+  gap: clamp(1.25rem, 3vw, 2.5rem);
+}
+
+.adminStatsTitle {
+  flex: 0 0 auto;
+  color: var(--slk-tekst-dim);
+  font-size: 0.66rem;
+  font-weight: 300;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.adminStatsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(70px, 1fr));
+  width: min(560px, 100%);
+  gap: 0;
+}
+
+.adminStat {
+  min-width: 0;
+  padding: 0 1rem;
+  border-left: 1px solid rgba(243, 241, 236, 0.16);
+}
+
+.adminStat strong {
+  display: block;
+  color: var(--slk-tekst);
+  font-size: 1.18rem;
+  font-weight: 400;
+  line-height: 1.05;
+}
+
+.adminStat span {
+  display: block;
+  margin-top: 0.18rem;
+  color: var(--slk-tekst-dim);
+  font-size: 0.62rem;
+  font-weight: 300;
+  letter-spacing: 0.04em;
+}
+
 .adminToolbar {
   position: relative;
   z-index: 80;
@@ -1426,11 +1482,16 @@
   letter-spacing: 0.04em;
 }
 
-.adminToolbarButton:hover,
+.adminToolbarButton:hover:not(:disabled),
 .sectionEditButton:hover,
 .addPhotoButton:hover,
 .inlineAdminButton:hover {
   border-color: var(--slk-tekst);
+}
+
+.adminToolbarButton:disabled {
+  cursor: wait;
+  opacity: 0.55;
 }
 
 .sectionEditButton {
@@ -1708,6 +1769,34 @@
 }
 
 @media (max-width: 720px) {
+  .adminStatsInner {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .adminStatsGrid {
+    width: 100%;
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .adminStat {
+    padding: 0 0.55rem;
+  }
+
+  .adminStat:first-child {
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  .adminStat strong {
+    font-size: 1rem;
+  }
+
+  .adminStat span {
+    font-size: 0.56rem;
+  }
+
   .adminToolbarInner {
     align-items: flex-start;
     flex-direction: column;
