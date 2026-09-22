@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, TouchEvent, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import styles from "@/app/page.module.css";
 import { supabase } from "@/lib/supabase";
@@ -57,6 +57,7 @@ const UI_TEXT = {
     uploadFailed: "Uploaden mislukt", storeFailed: "Opslaan mislukt", languageNl: "Nederlands", languageEn: "Engels",
     photoAddedOne: "foto toegevoegd.", photoAddedMany: "foto's toegevoegd.", dutch: "Nederlands", english: "Engels",
     viewPhoto: "Bekijk foto", previousPhoto: "Vorige foto", nextPhoto: "Volgende foto",
+    aboutPhoto: "Foto bij Over mij", chooseReplacement: "Kies een nieuwe foto", replacePhoto: "Foto vervangen", aboutPhotoSaved: "Foto bij Over mij is aangepast.",
   },
   en: {
     access: "Access", code: "Code", view: "View", codeWrong: "Incorrect code",
@@ -84,6 +85,7 @@ const UI_TEXT = {
     uploadFailed: "Upload failed", storeFailed: "Saving failed", languageNl: "Dutch", languageEn: "English",
     photoAddedOne: "photo added.", photoAddedMany: "photos added.", dutch: "Dutch", english: "English",
     viewPhoto: "View photo", previousPhoto: "Previous photo", nextPhoto: "Next photo",
+    aboutPhoto: "About me photo", chooseReplacement: "Choose a new photo", replacePhoto: "Replace photo", aboutPhotoSaved: "About me photo has been updated.",
   },
 } as const;
 
@@ -251,6 +253,10 @@ export default function StahleckerSite() {
     en: { ...DEFAULT_SITE_CONTENT_EN },
   });
   const content = contentByLanguage[language];
+  const [aboutImagePath, setAboutImagePath] = useState("");
+  const [aboutImageEditorOpen, setAboutImageEditorOpen] = useState(false);
+  const [aboutImageFile, setAboutImageFile] = useState<File | null>(null);
+  const [savingAboutImage, setSavingAboutImage] = useState(false);
 
   const [photos, setPhotos] = useState<PortfolioPhoto[]>([]);
   const [siteError, setSiteError] = useState("");
@@ -283,6 +289,7 @@ export default function StahleckerSite() {
   const [savingPhoto, setSavingPhoto] = useState(false);
 
   const [lightboxPhotoId, setLightboxPhotoId] = useState<string | null>(null);
+  const lightboxTouchStart = useRef<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -392,9 +399,16 @@ export default function StahleckerSite() {
 
     const nextNl: SiteContent = { ...DEFAULT_SITE_CONTENT_NL };
     const nextEn: SiteContent = { ...DEFAULT_SITE_CONTENT_EN };
+    let nextAboutImagePath = "";
 
     for (const row of data ?? []) {
       const rawKey = String(row.key);
+
+      if (rawKey === "about_image_path") {
+        nextAboutImagePath = String(row.value ?? "");
+        continue;
+      }
+
       const isEnglish = rawKey.endsWith("_en");
       const baseKey = (isEnglish ? rawKey.slice(0, -3) : rawKey) as SiteContentKey;
       const target = isEnglish ? nextEn : nextNl;
@@ -405,6 +419,7 @@ export default function StahleckerSite() {
     }
 
     setContentByLanguage({ nl: nextNl, en: nextEn });
+    setAboutImagePath(nextAboutImagePath);
   }
 
   async function loadPhotos() {
@@ -458,6 +473,44 @@ export default function StahleckerSite() {
     if (lightboxPhotos.length < 2 || lightboxIndex < 0) return;
     const nextIndex = (lightboxIndex + direction + lightboxPhotos.length) % lightboxPhotos.length;
     setLightboxPhotoId(lightboxPhotos[nextIndex].id);
+  }
+
+  function handleLightboxTouchStart(event: TouchEvent<HTMLDivElement>) {
+    if (event.touches.length !== 1) {
+      lightboxTouchStart.current = null;
+      return;
+    }
+
+    lightboxTouchStart.current = {
+      x: event.touches[0].clientX,
+      y: event.touches[0].clientY,
+    };
+  }
+
+  function handleLightboxTouchEnd(event: TouchEvent<HTMLDivElement>) {
+    const start = lightboxTouchStart.current;
+    lightboxTouchStart.current = null;
+
+    if (!start || event.changedTouches.length === 0) return;
+
+    const end = event.changedTouches[0];
+    const deltaX = end.clientX - start.x;
+    const deltaY = end.clientY - start.y;
+    const absX = Math.abs(deltaX);
+    const absY = Math.abs(deltaY);
+
+    if (absX < 55 && absY < 70) return;
+
+    if (absX > absY * 1.15) {
+      if (lightboxPhotos.length > 1) {
+        showLightboxPhoto(deltaX < 0 ? 1 : -1);
+      }
+      return;
+    }
+
+    if (absY > absX * 1.15 && absY >= 70) {
+      closeLightbox();
+    }
   }
 
   useEffect(() => {
@@ -737,6 +790,69 @@ export default function StahleckerSite() {
     if (editingPhoto?.id === photo.id) setEditingPhoto(null);
     await loadPhotos();
     setAdminMessage(t.photoDeleted);
+  }
+
+  async function saveAboutImage() {
+    if (!aboutImageFile) {
+      setSiteError(t.choosePhoto);
+      return;
+    }
+
+    if (
+      !["image/jpeg", "image/png", "image/webp"].includes(aboutImageFile.type) ||
+      aboutImageFile.size > 15 * 1024 * 1024
+    ) {
+      setSiteError(`${aboutImageFile.name}: ${t.fileInvalid}`);
+      return;
+    }
+
+    setSavingAboutImage(true);
+    setSiteError("");
+    setAdminMessage("");
+
+    const safeName = sanitizeFileName(aboutImageFile.name);
+    const storagePath = `site/about/${crypto.randomUUID()}-${safeName}`;
+
+    const { error: storageError } = await supabase.storage
+      .from("portfolio")
+      .upload(storagePath, aboutImageFile, {
+        cacheControl: "3600",
+        upsert: false,
+        contentType: aboutImageFile.type,
+      });
+
+    if (storageError) {
+      setSiteError(`${t.uploadFailed}: ${storageError.message}`);
+      setSavingAboutImage(false);
+      return;
+    }
+
+    const { error: contentError } = await supabase.from("site_content").upsert(
+      {
+        key: "about_image_path",
+        value: storagePath,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "key" }
+    );
+
+    if (contentError) {
+      await supabase.storage.from("portfolio").remove([storagePath]);
+      setSiteError(`${t.storeFailed}: ${contentError.message}`);
+      setSavingAboutImage(false);
+      return;
+    }
+
+    const previousPath = aboutImagePath;
+    setAboutImagePath(storagePath);
+    setAboutImageFile(null);
+    setAboutImageEditorOpen(false);
+    setSavingAboutImage(false);
+    setAdminMessage(t.aboutPhotoSaved);
+
+    if (previousPath) {
+      await supabase.storage.from("portfolio").remove([previousPath]);
+    }
   }
 
   const adminLoginModal = adminLoginOpen && !adminMode ? (
@@ -1099,13 +1215,30 @@ export default function StahleckerSite() {
           <div className={styles.container}>
             <div className={styles.overMijGrid}>
               <div className={styles.overMijImageWrap}>
-                <Image
-                  src="/stahlecker/over-mij-jeroen.jpg"
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={
+                    aboutImagePath
+                      ? supabase.storage.from("portfolio").getPublicUrl(aboutImagePath).data.publicUrl
+                      : "/stahlecker/over-mij-jeroen.jpg"
+                  }
                   alt="Jeroen Stahlecker"
-                  fill
-                  sizes="(min-width: 780px) 380px, 100vw"
                   className={styles.overMijImg}
                 />
+                {adminMode && (
+                  <button
+                    type="button"
+                    className={styles.overMijImageEditButton}
+                    onClick={() => {
+                      setAboutImageFile(null);
+                      setSiteError("");
+                      setAdminMessage("");
+                      setAboutImageEditorOpen(true);
+                    }}
+                  >
+                    {t.editPhoto}
+                  </button>
+                )}
               </div>
 
               <div className={styles.overMijTekst}>
@@ -1388,6 +1521,63 @@ export default function StahleckerSite() {
         </div>
       )}
 
+      {adminMode && aboutImageEditorOpen && (
+        <div className={styles.adminModalBackdrop} role="dialog" aria-modal="true" aria-label={t.aboutPhoto}>
+          <div className={styles.adminModal}>
+            <div className={styles.adminModalHead}>
+              <div>
+                <p className={styles.adminModalEyebrow}>{t.aboutPhoto}</p>
+                <h2>{t.replacePhoto}</h2>
+              </div>
+              <button
+                type="button"
+                className={styles.adminModalClose}
+                onClick={() => !savingAboutImage && setAboutImageEditorOpen(false)}
+                aria-label={t.close}
+              >
+                ×
+              </button>
+            </div>
+
+            <label className={styles.adminFilePicker}>
+              <span>{t.chooseReplacement}</span>
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={(event) => setAboutImageFile(event.target.files?.[0] ?? null)}
+                disabled={savingAboutImage}
+              />
+            </label>
+
+            {aboutImageFile && (
+              <div className={styles.aboutImageAdminPreview}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={URL.createObjectURL(aboutImageFile)} alt="" />
+              </div>
+            )}
+
+            <div className={styles.adminModalFooter}>
+              <button
+                type="button"
+                className={styles.adminSecondaryButton}
+                onClick={() => setAboutImageEditorOpen(false)}
+                disabled={savingAboutImage}
+              >
+                {t.cancel}
+              </button>
+              <button
+                type="button"
+                className={styles.adminPrimaryButton}
+                onClick={() => void saveAboutImage()}
+                disabled={savingAboutImage || !aboutImageFile}
+              >
+                {savingAboutImage ? t.uploading : t.replacePhoto}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {lightboxPhoto && (
         <div
           className={styles.lightboxBackdrop}
@@ -1406,7 +1596,12 @@ export default function StahleckerSite() {
               ×
             </button>
 
-            <div className={styles.lightboxStage}>
+            <div
+              className={styles.lightboxStage}
+              onTouchStart={handleLightboxTouchStart}
+              onTouchEnd={handleLightboxTouchEnd}
+              onTouchCancel={() => { lightboxTouchStart.current = null; }}
+            >
               {lightboxPhotos.length > 1 && (
                 <button
                   type="button"
