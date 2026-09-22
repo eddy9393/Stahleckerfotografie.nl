@@ -971,33 +971,6 @@ export default function StahleckerSite() {
     setReviewEditorOpen(true);
   }
 
-  async function translateReview(quote: string, role: string) {
-    const { data } = await supabase.auth.getSession();
-    const accessToken = data.session?.access_token;
-    if (!accessToken) throw new Error(t.noRights);
-
-    const response = await fetch("/api/translate-review", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify({ quote, role }),
-    });
-
-    const result = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      throw new Error(result.error || t.reviewTranslationFailed);
-    }
-
-    return result as {
-      source_language: string;
-      quote_nl: string;
-      role_nl: string | null;
-      quote_en: string;
-      role_en: string | null;
-    };
-  }
 
   async function saveReview() {
     const quote = reviewQuote.trim();
@@ -1024,16 +997,6 @@ export default function StahleckerSite() {
     setSavingReview(true);
     setSiteError("");
     setAdminMessage("");
-
-    let translations: Awaited<ReturnType<typeof translateReview>>;
-    try {
-      translations = await translateReview(quote, role);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : t.reviewTranslationFailed;
-      setSiteError(`${t.reviewTranslationFailed}: ${message}`);
-      setSavingReview(false);
-      return;
-    }
 
     let newPhotoPath: string | null = null;
     if (reviewPhotoFile) {
@@ -1066,11 +1029,13 @@ export default function StahleckerSite() {
       quote_original: quote,
       name,
       role_original: role || null,
-      source_language: translations.source_language,
-      quote_nl: translations.quote_nl,
-      role_nl: translations.role_nl,
-      quote_en: translations.quote_en,
-      role_en: translations.role_en,
+      source_language: null,
+      // De bestaande NL/EN-kolommen blijven gevuld om compatibel te blijven
+      // met de al uitgevoerde Supabase-migratie. Er vindt geen vertaling plaats.
+      quote_nl: quote,
+      role_nl: role || null,
+      quote_en: quote,
+      role_en: role || null,
       photo_path: photoPath,
     };
 
@@ -1668,8 +1633,8 @@ export default function StahleckerSite() {
                   {[0, ...(reviews.length > 1 && !adminMode ? [1] : [])].map((copyIndex) => (
                     <div className={styles.reviewsSet} key={copyIndex} aria-hidden={copyIndex === 1 ? true : undefined}>
                       {reviews.map((review) => {
-                        const quote = language === "en" ? review.quote_en : review.quote_nl;
-                        const role = language === "en" ? review.role_en : review.role_nl;
+                        const quote = review.quote_original;
+                        const role = review.role_original;
                         const imageUrl = review.photo_path
                           ? supabase.storage.from("portfolio").getPublicUrl(review.photo_path).data.publicUrl
                           : null;
