@@ -104,6 +104,7 @@ const UI_TEXT = {
     reviewSaved: "Review is opgeslagen.", reviewDeleted: "Review is verwijderd.", reviewDelete: "Review verwijderen",
     confirmReviewDelete: "Weet je zeker dat je deze review definitief wilt verwijderen?", reviewTranslationFailed: "Automatische vertaling is mislukt",
     removeCurrentPhoto: "Huidige foto verwijderen", reviewSectionUpdated: "Reviewsectie is aangepast.",
+    readMore: "Meer lezen", readLess: "Minder lezen",
   },
   en: {
     access: "Access", code: "Code", view: "View", codeWrong: "Incorrect code",
@@ -139,6 +140,7 @@ const UI_TEXT = {
     reviewSaved: "Review has been saved.", reviewDeleted: "Review has been deleted.", reviewDelete: "Delete review",
     confirmReviewDelete: "Are you sure you want to permanently delete this review?", reviewTranslationFailed: "Automatic translation failed",
     removeCurrentPhoto: "Remove current photo", reviewSectionUpdated: "Review section has been updated.",
+    readMore: "Read more", readLess: "Read less",
   },
 } as const;
 
@@ -366,6 +368,8 @@ export default function StahleckerSite() {
   const t = UI_TEXT[language];
 
   const [menuOpen, setMenuOpen] = useState(false);
+  const [workshopExpanded, setWorkshopExpanded] = useState(false);
+  const [aboutExpanded, setAboutExpanded] = useState(false);
   const [toegangGecontroleerd, setToegangGecontroleerd] = useState(false);
   const [volledigeSite, setVolledigeSite] = useState(false);
   const [toegangscode, setToegangscode] = useState("");
@@ -1580,7 +1584,17 @@ export default function StahleckerSite() {
               <div className={styles.workshopBody}>
                 <p>{content.workshop_body_1}</p>
                 <p>{content.workshop_body_2}</p>
-                <p>{content.workshop_body_3}</p>
+                {workshopExpanded && <p>{content.workshop_body_3}</p>}
+                {content.workshop_body_3 && (
+                  <button
+                    type="button"
+                    className={styles.readMoreButton}
+                    onClick={() => setWorkshopExpanded((current) => !current)}
+                    aria-expanded={workshopExpanded}
+                  >
+                    {workshopExpanded ? t.readLess : t.readMore}
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -1628,9 +1642,23 @@ export default function StahleckerSite() {
                 </h2>
                 <p>{content.about_p1}</p>
                 <p>{content.about_p2}</p>
-                <p>{content.about_p3}</p>
-                <p>{content.about_p4}</p>
-                <p>{content.about_p5}</p>
+                {aboutExpanded && (
+                  <>
+                    <p>{content.about_p3}</p>
+                    <p>{content.about_p4}</p>
+                    <p>{content.about_p5}</p>
+                  </>
+                )}
+                {(content.about_p3 || content.about_p4 || content.about_p5) && (
+                  <button
+                    type="button"
+                    className={styles.readMoreButton}
+                    onClick={() => setAboutExpanded((current) => !current)}
+                    aria-expanded={aboutExpanded}
+                  >
+                    {aboutExpanded ? t.readLess : t.readMore}
+                  </button>
+                )}
               </div>
             </div>
           </div>
