@@ -44,7 +44,7 @@ const UI_TEXT = {
     photosAdd: "Foto's toevoegen", selectPhotos: "Selecteer één of meerdere foto's", titleOptional: "Titel (optioneel)", altOptional: "Alt-tekst (optioneel)",
     publishDirect: "Direct publiceren", upload: "uploaden", uploading: "Uploaden…", published: "Gepubliceerd", photoDelete: "Foto verwijderen",
     photoChange: "Foto wijzigen", photoSaved: "Foto is aangepast.", photoDeleted: "Foto is verwijderd.",
-    choosePhoto: "Kies minimaal één foto.", fileInvalid: "alleen JPG, PNG of WebP tot 15 MB is toegestaan.",
+    choosePhoto: "Kies minimaal één foto.", fileInvalid: "alleen JPG, PNG of WebP is toegestaan.",
     name: "Naam", phoneOptional: "Telefoonnummer (optioneel)", desiredService: "Gewenste dienst", chooseService: "Kies een dienst",
     serviceMoments: "Belangrijke momenten", servicePortrait: "Portretfotografie", serviceWorkshop: "Fotografieworkshops en lessen",
     requestLabel: "Vertel iets over je aanvraag", requestPlaceholder: "Bijvoorbeeld: waar vindt de opdracht plaats en welke datum of periode heb je in gedachten?",
@@ -72,7 +72,7 @@ const UI_TEXT = {
     photosAdd: "Add photos", selectPhotos: "Select one or more photos", titleOptional: "Title (optional)", altOptional: "Alt text (optional)",
     publishDirect: "Publish immediately", upload: "upload", uploading: "Uploading…", published: "Published", photoDelete: "Delete photo",
     photoChange: "Edit photo", photoSaved: "Photo has been updated.", photoDeleted: "Photo has been deleted.",
-    choosePhoto: "Choose at least one photo.", fileInvalid: "only JPG, PNG or WebP up to 15 MB is allowed.",
+    choosePhoto: "Choose at least one photo.", fileInvalid: "only JPG, PNG or WebP is allowed.",
     name: "Name", phoneOptional: "Phone number (optional)", desiredService: "Requested service", chooseService: "Choose a service",
     serviceMoments: "Important moments", servicePortrait: "Portrait photography", serviceWorkshop: "Photography workshops and lessons",
     requestLabel: "Tell me about your request", requestPlaceholder: "For example: where will the assignment take place and what date or period do you have in mind?",
@@ -120,6 +120,68 @@ function sanitizeFileName(name: string) {
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9._-]+/g, "-")
     .replace(/-+/g, "-");
+}
+
+const MAX_IMAGE_DIMENSION = 2400;
+const WEBP_QUALITY = 0.84;
+
+function loadImage(file: File) {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const image = new window.Image();
+
+    image.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(image);
+    };
+
+    image.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Afbeelding kon niet worden gelezen."));
+    };
+
+    image.src = url;
+  });
+}
+
+async function optimizeImageForWeb(file: File) {
+  const image = await loadImage(file);
+  const originalWidth = image.naturalWidth;
+  const originalHeight = image.naturalHeight;
+  const longestSide = Math.max(originalWidth, originalHeight);
+  const scale = longestSide > MAX_IMAGE_DIMENSION ? MAX_IMAGE_DIMENSION / longestSide : 1;
+  const width = Math.max(1, Math.round(originalWidth * scale));
+  const height = Math.max(1, Math.round(originalHeight * scale));
+
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+
+  const context = canvas.getContext("2d");
+  if (!context) {
+    throw new Error("Afbeelding kon niet worden geoptimaliseerd.");
+  }
+
+  context.drawImage(image, 0, 0, width, height);
+
+  const blob = await new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(
+      (result) => {
+        if (result) resolve(result);
+        else reject(new Error("Afbeelding kon niet naar WebP worden omgezet."));
+      },
+      "image/webp",
+      WEBP_QUALITY
+    );
+  });
+
+  const originalName = file.name.replace(/\.[^/.]+$/, "");
+  const optimizedName = `${sanitizeFileName(originalName) || "foto"}.webp`;
+
+  return new File([blob], optimizedName, {
+    type: "image/webp",
+    lastModified: Date.now(),
+  });
 }
 
 function LanguageSwitcher({
@@ -655,9 +717,7 @@ export default function StahleckerSite() {
     }
 
     const invalid = uploadDrafts.find(
-      (item) =>
-        !["image/jpeg", "image/png", "image/webp"].includes(item.file.type) ||
-        item.file.size > 15 * 1024 * 1024
+      (item) => !["image/jpeg", "image/png", "image/webp"].includes(item.file.type)
     );
 
     if (invalid) {
@@ -677,17 +737,45 @@ export default function StahleckerSite() {
 
     for (let index = 0; index < uploadDrafts.length; index += 1) {
       const draft = uploadDrafts[index];
-      setUploadProgress(language === "nl" ? `Foto ${index + 1} van ${uploadDrafts.length} uploaden…` : `Uploading photo ${index + 1} of ${uploadDrafts.length}…`);
+      setUploadProgress(
+        language === "nl"
+          ? `Foto ${index + 1} van ${uploadDrafts.length} optimaliseren…`
+          : `Optimizing photo ${index + 1} of ${uploadDrafts.length}…`
+      );
 
-      const safeName = sanitizeFileName(draft.file.name);
+      let optimizedFile: File;
+      try {
+        optimizedFile = await optimizeImageForWeb(draft.file);
+      } catch (optimizationError) {
+        const message = optimizationError instanceof Error ? optimizationError.message : t.uploadFailed;
+        setSiteError(`${draft.file.name}: ${message}`);
+        setUploading(false);
+        setUploadProgress("");
+        return;
+      }
+
+      if (optimizedFile.size > 15 * 1024 * 1024) {
+        setSiteError(`${draft.file.name}: ${t.fileInvalid}`);
+        setUploading(false);
+        setUploadProgress("");
+        return;
+      }
+
+      setUploadProgress(
+        language === "nl"
+          ? `Foto ${index + 1} van ${uploadDrafts.length} uploaden…`
+          : `Uploading photo ${index + 1} of ${uploadDrafts.length}…`
+      );
+
+      const safeName = sanitizeFileName(optimizedFile.name);
       const storagePath = `${uploadCategory}/${crypto.randomUUID()}-${safeName}`;
 
       const { error: storageError } = await supabase.storage
         .from("portfolio")
-        .upload(storagePath, draft.file, {
+        .upload(storagePath, optimizedFile, {
           cacheControl: "3600",
           upsert: false,
-          contentType: draft.file.type,
+          contentType: optimizedFile.type,
         });
 
       if (storageError) {
@@ -798,10 +886,7 @@ export default function StahleckerSite() {
       return;
     }
 
-    if (
-      !["image/jpeg", "image/png", "image/webp"].includes(aboutImageFile.type) ||
-      aboutImageFile.size > 15 * 1024 * 1024
-    ) {
+    if (!["image/jpeg", "image/png", "image/webp"].includes(aboutImageFile.type)) {
       setSiteError(`${aboutImageFile.name}: ${t.fileInvalid}`);
       return;
     }
@@ -810,15 +895,31 @@ export default function StahleckerSite() {
     setSiteError("");
     setAdminMessage("");
 
-    const safeName = sanitizeFileName(aboutImageFile.name);
+    let optimizedAboutImage: File;
+    try {
+      optimizedAboutImage = await optimizeImageForWeb(aboutImageFile);
+    } catch (optimizationError) {
+      const message = optimizationError instanceof Error ? optimizationError.message : t.uploadFailed;
+      setSiteError(`${aboutImageFile.name}: ${message}`);
+      setSavingAboutImage(false);
+      return;
+    }
+
+    if (optimizedAboutImage.size > 15 * 1024 * 1024) {
+      setSiteError(`${aboutImageFile.name}: ${t.fileInvalid}`);
+      setSavingAboutImage(false);
+      return;
+    }
+
+    const safeName = sanitizeFileName(optimizedAboutImage.name);
     const storagePath = `site/about/${crypto.randomUUID()}-${safeName}`;
 
     const { error: storageError } = await supabase.storage
       .from("portfolio")
-      .upload(storagePath, aboutImageFile, {
+      .upload(storagePath, optimizedAboutImage, {
         cacheControl: "3600",
         upsert: false,
-        contentType: aboutImageFile.type,
+        contentType: optimizedAboutImage.type,
       });
 
     if (storageError) {
